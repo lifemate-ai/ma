@@ -38,6 +38,10 @@ async fn serve_static(uri: Uri) -> Response {
     serve_file(path)
 }
 
+fn is_asset_like_path(path: &str) -> bool {
+    path.rsplit('/').next().is_some_and(|segment| segment.contains('.'))
+}
+
 fn serve_file(path: &str) -> Response {
     match WebAssets::get(path) {
         Some(content) => {
@@ -49,6 +53,12 @@ fn serve_file(path: &str) -> Response {
                 .unwrap()
         }
         None => {
+            if is_asset_like_path(path) {
+                return Response::builder()
+                    .status(StatusCode::NOT_FOUND)
+                    .body(Body::empty())
+                    .unwrap();
+            }
             // SPA fallback: index.html を返す
             match WebAssets::get("index.html") {
                 Some(content) => Response::builder()

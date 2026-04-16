@@ -7,7 +7,6 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>komorebi</title>
-  <link rel="manifest" href="/manifest.webmanifest" />
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { height: 100%; background: #1a1a1a; color: #e8e4dc; font-family: 'Hiragino Mincho ProN', 'Yu Mincho', Georgia, serif; }
@@ -16,6 +15,26 @@
 </head>
 <body>
   <div id="app"></div>
+  <script>
+    if (
+      location.hostname === 'localhost' &&
+      location.port === '5173' &&
+      'serviceWorker' in navigator
+    ) {
+      window.addEventListener('load', async () => {
+        try {
+          const registrations = await navigator.serviceWorker.getRegistrations()
+          await Promise.all(registrations.map(registration => registration.unregister()))
+          if ('caches' in window) {
+            const cacheNames = await caches.keys()
+            await Promise.all(cacheNames.map(name => caches.delete(name)))
+          }
+        } catch (_) {
+          // Keep dev boot resilient even if cleanup fails.
+        }
+      })
+    }
+  </script>
   <script type="module" src="/src/main.ts"></script>
 </body>
 </html>
