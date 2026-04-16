@@ -16,9 +16,9 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       manifest: {
-        name: 'Ma — 間',
-        short_name: 'Ma',
-        description: '2 minutes. No streak. No guilt. Just presence.',
+        name: 'komorebi',
+        short_name: 'komorebi',
+        description: 'Short, gentle mindfulness practice with a steady companion.',
         theme_color: '#1a1a1a',
         background_color: '#1a1a1a',
         display: 'standalone',

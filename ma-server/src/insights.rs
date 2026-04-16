@@ -1,11 +1,21 @@
-use axum::{Json, http::StatusCode, extract::{State, Extension}};
+use axum::{
+    extract::{Extension, State},
+    http::StatusCode,
+    Json,
+};
+use chrono::{DateTime, Utc};
 use serde::Serialize;
-use crate::{AppState, auth::Claims};
+
+use crate::{auth::Claims, AppState};
 
 #[derive(Serialize)]
 pub struct Insight {
-    pub text: String,
+    pub title: String,
+    pub summary: String,
     pub category: String,
+    pub confidence: f32,
+    pub sample_size: u32,
+    pub next_step: String,
 }
 
 #[derive(Serialize)]
@@ -14,132 +24,170 @@ pub struct InsightsResponse {
 }
 
 const MODE_LABELS: &[(&str, &str)] = &[
-    ("yasashii", "やさしい呼吸"),
+    ("yasashii", "呼吸に戻る"),
     ("motto_yasashii", "ただ座る"),
     ("body_scan", "ボディスキャン"),
     ("sbnrr", "SBNRR"),
-    ("emotion_mapping", "感情マッピング"),
-    ("gratitude", "感謝プラクティス"),
-    ("compassion", "慈悲の瞑想"),
-    ("checkin", "チェックイン"),
+    ("compassion", "思いを届ける"),
+    ("breathing_space", "Breathing Space"),
+    ("self_compassion_break", "Self-Compassion Break"),
+    ("stress_reset", "Stress Reset"),
+    ("sleep_winddown", "Sleep Winddown"),
 ];
 
 fn mode_label(mode: &str) -> &str {
-    MODE_LABELS.iter().find(|(k, _)| *k == mode).map(|(_, v)| *v).unwrap_or(mode)
+    MODE_LABELS.iter().find(|(key, _)| *key == mode).map(|(_, value)| *value).unwrap_or(mode)
+}
+
+fn confidence_from_sample(sample_size: u32) -> f32 {
+    match sample_size {
+        0..=1 => 0.22,
+        2..=3 => 0.38,
+        4..=6 => 0.54,
+        7..=10 => 0.68,
+        _ => 0.78,
+    }
 }
 
 pub async fn get_insights(
     State(state): State<AppState>,
-    claims: Option<Extension<Claims>>,
+    Extension(claims): Extension<Claims>,
 ) -> Result<Json<InsightsResponse>, StatusCode> {
-    let user_id = claims.map(|Extension(c)| c.sub);
     let conn = state.db.connect().map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-    let user_filter = user_id.as_deref().unwrap_or("");
-
-    // セッション数チェック（5未満なら空を返す）
-    let mut rows = conn.query(
-        "SELECT COUNT(*) FROM sessions WHERE (user_id = ?1 OR ?1 = '')",
-        libsql::params![user_filter]
-    ).await.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-    let total: i64 = if let Some(row) = rows.next().await.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)? {
-        row.get(0).unwrap_or(0)
-    } else { 0 };
-
-    if total < 5 {
-        return Ok(Json(InsightsResponse { insights: vec![] }));
-    }
-
+    let user_id = claims.sub;
     let mut insights = Vec::new();
 
-    // 1. 最もよく使うモード
-    let mut rows = conn.query(
-        "SELECT mode, COUNT(*) as cnt FROM sessions WHERE (user_id = ?1 OR ?1 = '') GROUP BY mode ORDER BY cnt DESC LIMIT 1",
-        libsql::params![user_filter]
-    ).await.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-
-    if let Some(row) = rows.next().await.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)? {
-        let mode: String = row.get(0).unwrap_or_default();
-        let cnt: i64 = row.get(1).unwrap_or(0);
-        if cnt >= 2 {
-            insights.push(Insight {
-                text: format!("よく「{}」を選んでいますね。", mode_label(&mode)),
-                category: "mode_pattern".into(),
-            });
-        }
-    }
-
-    // 2. チェックインの体の状態パターン
-    let mut rows = conn.query(
-        "SELECT body_state, COUNT(*) as cnt FROM checkins WHERE (user_id = ?1 OR ?1 = '') GROUP BY body_state ORDER BY cnt DESC LIMIT 1",
-        libsql::params![user_filter]
-    ).await.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-
-    if let Some(row) = rows.next().await.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)? {
-        let body_state: String = row.get(0).unwrap_or_default();
-        let cnt: i64 = row.get(1).unwrap_or(0);
-        if cnt >= 2 && !body_state.is_empty() {
-            insights.push(Insight {
-                text: format!("チェックインで「{}」とよく書いていますね。", body_state),
-                category: "body_pattern".into(),
-            });
-        }
-    }
-
-    // 3. 時間帯パターン（JST = UTC+9）
-    let mut rows = conn.query(
-        "SELECT (CAST(strftime('%H', started_at) AS INTEGER) + 9) % 24 as jst_hour,
+    let mut time_rows = conn
+        .query(
+            "SELECT
+                CASE
+                  WHEN ((CAST(strftime('%H', started_at) AS INTEGER) + 9) % 24) BETWEEN 5 AND 11 THEN 'morning'
+                  WHEN ((CAST(strftime('%H', started_at) AS INTEGER) + 9) % 24) BETWEEN 12 AND 16 THEN 'afternoon'
+                  WHEN ((CAST(strftime('%H', started_at) AS INTEGER) + 9) % 24) BETWEEN 17 AND 20 THEN 'evening'
+                  ELSE 'night'
+                END as bucket,
                 COUNT(*) as cnt
-         FROM sessions WHERE (user_id = ?1 OR ?1 = '')
-         GROUP BY jst_hour
-         ORDER BY cnt DESC
-         LIMIT 1",
-        libsql::params![user_filter]
-    ).await.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-
-    if let Some(row) = rows.next().await.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)? {
-        let hour: i64 = row.get(0).unwrap_or(12);
-        let cnt: i64 = row.get(1).unwrap_or(0);
-        if cnt >= 2 {
-            let time_of_day = match hour {
-                5..=11 => "朝",
-                12..=16 => "昼",
-                17..=20 => "夕方",
+             FROM sessions
+             WHERE user_id = ?1
+             GROUP BY bucket
+             ORDER BY cnt DESC
+             LIMIT 1",
+            libsql::params![user_id.clone()],
+        )
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    if let Some(row) = time_rows.next().await.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)? {
+        let bucket: String = row.get(0).unwrap_or_else(|_| "morning".to_string());
+        let count = row.get::<i64>(1).unwrap_or(0).max(0) as u32;
+        if count >= 2 {
+            let label = match bucket.as_str() {
+                "morning" => "朝",
+                "afternoon" => "昼",
+                "evening" => "夕方",
                 _ => "夜",
             };
             insights.push(Insight {
-                text: format!("{}にセッションすることが多いようです。", time_of_day),
-                category: "time_pattern".into(),
+                title: format!("{}に戻りやすいです", label),
+                summary: format!("今のところは、{}に開くと入りやすい傾向があります。", label),
+                category: "timing".into(),
+                confidence: confidence_from_sample(count),
+                sample_size: count,
+                next_step: format!("次も{}に 2〜3 分から始めてみてください。", label),
             });
         }
     }
 
-    // 4. 先週との頻度比較
-    let mut rows = conn.query(
-        "SELECT
-            SUM(CASE WHEN started_at >= datetime('now', '-7 days') THEN 1 ELSE 0 END) as this_week,
-            SUM(CASE WHEN started_at < datetime('now', '-7 days') AND started_at >= datetime('now', '-14 days') THEN 1 ELSE 0 END) as last_week
-         FROM sessions WHERE (user_id = ?1 OR ?1 = '')",
-        libsql::params![user_filter]
-    ).await.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-
-    if let Some(row) = rows.next().await.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)? {
-        let this_week: i64 = row.get(0).unwrap_or(0);
-        let last_week: i64 = row.get(1).unwrap_or(0);
-        if this_week > last_week && last_week > 0 {
-            insights.push(Insight {
-                text: "先週より多く練習しているようです。".into(),
-                category: "frequency".into(),
-            });
-        } else if this_week < last_week && last_week > 0 {
-            insights.push(Insight {
-                text: "練習のペースが少し落ち着いています。それでいい。".into(),
-                category: "frequency".into(),
-            });
-        }
+    let mut burden_rows = conn
+        .query(
+            "SELECT s.mode, AVG(p.burden) as avg_burden, COUNT(p.id) as sample_size
+             FROM sessions s
+             JOIN session_postcheck p ON p.session_id = s.id
+             WHERE s.user_id = ?1 AND p.burden IS NOT NULL
+             GROUP BY s.mode
+             HAVING sample_size >= 2
+             ORDER BY avg_burden ASC
+             LIMIT 1",
+            libsql::params![user_id.clone()],
+        )
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    if let Some(row) = burden_rows.next().await.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)? {
+        let mode: String = row.get(0).unwrap_or_default();
+        let sample_size = row.get::<i64>(2).unwrap_or(0).max(0) as u32;
+        insights.push(Insight {
+            title: format!("{}は負担が軽めです", mode_label(&mode)),
+            summary: format!("いまのところは、{}がいちばん軽く戻りやすい practice です。", mode_label(&mode)),
+            category: "lowest_burden_protocol".into(),
+            confidence: confidence_from_sample(sample_size),
+            sample_size,
+            next_step: format!("迷う日は {} を短く選ぶと入りやすそうです。", mode_label(&mode)),
+        });
     }
 
-    // Top 3
+    let mut effect_rows = conn
+        .query(
+            "SELECT
+                s.mode,
+                AVG(COALESCE(p.calm_delta_self_report, 0) + COALESCE(p.presence_delta, 0) + COALESCE(p.self_kindness_delta, 0)) / 3.0 as calm_score,
+                COUNT(p.id) as sample_size
+             FROM sessions s
+             JOIN session_postcheck p ON p.session_id = s.id
+             WHERE s.user_id = ?1
+             GROUP BY s.mode
+             HAVING sample_size >= 2
+             ORDER BY calm_score DESC
+             LIMIT 1",
+            libsql::params![user_id.clone()],
+        )
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    if let Some(row) = effect_rows.next().await.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)? {
+        let mode: String = row.get(0).unwrap_or_default();
+        let sample_size = row.get::<i64>(2).unwrap_or(0).max(0) as u32;
+        insights.push(Insight {
+            title: format!("{}は穏やかさにつながりやすいです", mode_label(&mode)),
+            summary: format!("今のところは、{}のあとに calmer / present の感触が出やすい傾向があります。", mode_label(&mode)),
+            category: "best_effect_protocol".into(),
+            confidence: confidence_from_sample(sample_size),
+            sample_size,
+            next_step: format!("余裕がある日に {} をもう一度試してみてください。", mode_label(&mode)),
+        });
+    }
+
+    let mut session_rows = conn
+        .query(
+            "SELECT mode, started_at FROM sessions WHERE user_id = ?1 ORDER BY started_at ASC",
+            libsql::params![user_id],
+        )
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    let mut previous: Option<DateTime<Utc>> = None;
+    let mut reentry_modes = std::collections::HashMap::<String, u32>::new();
+    while let Some(row) = session_rows.next().await.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)? {
+        let mode: String = row.get(0).unwrap_or_default();
+        let started_at: String = row.get(1).unwrap_or_default();
+        let Some(current) = DateTime::parse_from_rfc3339(&started_at).ok().map(|value| value.with_timezone(&Utc)) else {
+            continue;
+        };
+        if let Some(last) = previous {
+            if (current - last).num_days() >= 5 {
+                *reentry_modes.entry(mode).or_insert(0) += 1;
+            }
+        }
+        previous = Some(current);
+    }
+    if let Some((mode, count)) = reentry_modes.into_iter().max_by_key(|(_, count)| *count) {
+        let sample_size = count.max(1);
+        insights.push(Insight {
+            title: format!("{}は戻り口になりやすいです", mode_label(&mode)),
+            summary: format!("少し間が空いた後は、{}から再開することが多いようです。", mode_label(&mode)),
+            category: "reentry_path".into(),
+            confidence: confidence_from_sample(sample_size),
+            sample_size,
+            next_step: format!("久しぶりの日は {} を短く選ぶと入りやすそうです。", mode_label(&mode)),
+        });
+    }
+
     insights.truncate(3);
-
     Ok(Json(InsightsResponse { insights }))
 }

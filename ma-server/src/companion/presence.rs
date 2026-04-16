@@ -185,7 +185,7 @@ fn user_scope(user_id: Option<&str>) -> String {
 }
 
 fn query_filter(user_id: Option<&str>) -> String {
-    user_id.unwrap_or("").to_string()
+    user_scope(user_id)
 }
 
 fn compact_text(text: &str, max_chars: usize) -> String {
@@ -321,7 +321,7 @@ async fn preferred_mode(db: &Database, user_id: Option<&str>) -> anyhow::Result<
         .query(
             "SELECT mode, COUNT(*) as cnt
              FROM sessions
-             WHERE (user_id = ?1 OR ?1 = '')
+             WHERE user_id = ?1
              GROUP BY mode
              ORDER BY cnt DESC
              LIMIT 1",
@@ -352,7 +352,7 @@ async fn preferred_time_bucket(db: &Database, user_id: Option<&str>) -> anyhow::
                 END as bucket,
                 COUNT(*) as cnt
              FROM sessions
-             WHERE (user_id = ?1 OR ?1 = '')
+             WHERE user_id = ?1
              GROUP BY bucket
              ORDER BY cnt DESC
              LIMIT 1",

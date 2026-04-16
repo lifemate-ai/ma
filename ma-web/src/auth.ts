@@ -1,8 +1,31 @@
-const COGNITO_DOMAIN = 'https://ma-mindfulness-2026.auth.ap-northeast-1.amazoncognito.com'
-const CLIENT_ID = '3h75pqomji3bjcsg4vg04h5fd3'
-const REDIRECT_URI = 'https://chbelolgp4.execute-api.ap-northeast-1.amazonaws.com/'
-const TOKEN_KEY = 'ma_id_token'
-const REFRESH_KEY = 'ma_refresh_token'
+const AUTH_MODE = import.meta.env.VITE_AUTH_MODE ?? 'cognito'
+const COGNITO_DOMAIN = import.meta.env.VITE_COGNITO_DOMAIN ?? ''
+const CLIENT_ID = import.meta.env.VITE_COGNITO_CLIENT_ID ?? ''
+const REDIRECT_URI = import.meta.env.VITE_COGNITO_REDIRECT_URI ?? window.location.origin + '/'
+const TOKEN_KEY = 'komorebi_id_token'
+const LEGACY_TOKEN_KEY = 'ma_id_token'
+const REFRESH_KEY = 'komorebi_refresh_token'
+const LEGACY_REFRESH_KEY = 'ma_refresh_token'
+
+function isCognitoConfigured(): boolean {
+  return Boolean(COGNITO_DOMAIN && CLIENT_ID && REDIRECT_URI)
+}
+
+export function isAuthEnabled(): boolean {
+  return AUTH_MODE !== 'disabled'
+}
+
+function readWithMigration(storage: Storage, key: string, legacyKey: string): string | null {
+  const current = storage.getItem(key)
+  if (current) return current
+
+  const legacy = storage.getItem(legacyKey)
+  if (!legacy) return null
+
+  storage.setItem(key, legacy)
+  storage.removeItem(legacyKey)
+  return legacy
+}
 
 // ── PKCE helpers ────────────────────────────────────────────────
 
@@ -23,17 +46,21 @@ async function sha256Base64url(plain: string): Promise<string> {
 // ── Token storage ────────────────────────────────────────────────
 
 export function getIdToken(): string | null {
-  return sessionStorage.getItem(TOKEN_KEY)
+  return readWithMigration(sessionStorage, TOKEN_KEY, LEGACY_TOKEN_KEY)
 }
 
 function saveTokens(idToken: string, refreshToken?: string) {
   sessionStorage.setItem(TOKEN_KEY, idToken)
+  sessionStorage.removeItem(LEGACY_TOKEN_KEY)
   if (refreshToken) localStorage.setItem(REFRESH_KEY, refreshToken)
+  localStorage.removeItem(LEGACY_REFRESH_KEY)
 }
 
 function clearTokens() {
   sessionStorage.removeItem(TOKEN_KEY)
+  sessionStorage.removeItem(LEGACY_TOKEN_KEY)
   localStorage.removeItem(REFRESH_KEY)
+  localStorage.removeItem(LEGACY_REFRESH_KEY)
 }
 
 function isTokenExpired(token: string): boolean {
@@ -48,6 +75,7 @@ function isTokenExpired(token: string): boolean {
 // ── Auth flow ────────────────────────────────────────────────────
 
 export async function redirectToLogin() {
+  if (!isCognitoConfigured()) return
   const verifier = randomBase64url(64)
   const challenge = await sha256Base64url(verifier)
   sessionStorage.setItem('pkce_verifier', verifier)
@@ -66,6 +94,7 @@ export async function redirectToLogin() {
 }
 
 async function exchangeCode(code: string): Promise<boolean> {
+  if (!isCognitoConfigured()) return false
   const verifier = sessionStorage.getItem('pkce_verifier')
   if (!verifier) return false
   sessionStorage.removeItem('pkce_verifier')
@@ -95,7 +124,8 @@ async function exchangeCode(code: string): Promise<boolean> {
 }
 
 async function refreshTokens(): Promise<boolean> {
-  const refresh = localStorage.getItem(REFRESH_KEY)
+  if (!isCognitoConfigured()) return false
+  const refresh = readWithMigration(localStorage, REFRESH_KEY, LEGACY_REFRESH_KEY)
   if (!refresh) return false
 
   const body = new URLSearchParams({
@@ -122,6 +152,12 @@ async function refreshTokens(): Promise<boolean> {
  * コールバックのcodeを処理してトークンを保存する。
  */
 export async function ensureAuth(): Promise<boolean> {
+  if (!isAuthEnabled()) return true
+  if (!isCognitoConfigured()) {
+    console.error('Cognito auth is enabled but VITE_COGNITO_* config is missing')
+    return false
+  }
+
   // コールバック処理
   const params = new URLSearchParams(window.location.search)
   const code = params.get('code')
@@ -144,6 +180,7 @@ export async function ensureAuth(): Promise<boolean> {
 
 export function logout() {
   clearTokens()
+  if (!isAuthEnabled() || !isCognitoConfigured()) return
   const params = new URLSearchParams({
     client_id: CLIENT_ID,
     logout_uri: REDIRECT_URI,

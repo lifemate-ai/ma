@@ -1,0 +1,215 @@
+import { defaultUserGoals, defaultUserPreferences, saveUserGoals, saveUserPreferences, } from './api';
+const CONTEXT_OPTIONS = [
+    ['morning', '朝'],
+    ['work_break', '仕事の合間'],
+    ['bedtime', '寝る前'],
+    ['emotional_overwhelm', '感情が荒れた時'],
+    ['general_reset', 'なんとなく整えたい'],
+];
+const PRIMARY_GOALS = [
+    ['stress', 'stress relief'],
+    ['grounding', 'grounding'],
+    ['focus', 'focus'],
+    ['kindness', 'self-kindness'],
+    ['sleep', 'sleep wind-down'],
+    ['regulation', 'emotional regulation'],
+];
+const DURATION_OPTIONS = [2, 3, 5, 10, 15];
+const POSTURE_OPTIONS = [
+    ['sitting', '座る'],
+    ['standing', '立つ'],
+    ['walking', '歩く'],
+    ['lying', '横になる'],
+];
+const VOICE_OPTIONS = [
+    ['low', '少なめ'],
+    ['medium', 'ふつう'],
+    ['high', '多め'],
+];
+const EYES_OPTIONS = [
+    ['any', 'どちらでも'],
+    ['open', '目を開けたい'],
+    ['closed', '目を閉じたい'],
+];
+function toggleValue(values, value) {
+    return values.includes(value)
+        ? values.filter(item => item !== value)
+        : [...values, value];
+}
+function goalIntensity(primaryGoal, key) {
+    if (!primaryGoal)
+        return 0;
+    const mapping = {
+        stress: 'stress',
+        grounding: 'general_presence',
+        focus: 'focus',
+        kindness: 'kindness',
+        sleep: 'sleep',
+        regulation: 'emotional_regulation',
+    };
+    return mapping[primaryGoal] === key ? 3 : 0;
+}
+export function mountOnboarding(container, options) {
+    const preferences = {
+        ...defaultUserPreferences(),
+        ...options.initialPreferences,
+    };
+    const goals = {
+        ...defaultUserGoals(),
+        ...options.initialGoals,
+    };
+    const title = options.editing ? '整え方を見直す' : 'はじめに';
+    container.innerHTML = `
+    <div class="onboarding-screen">
+      <div class="onboarding-card">
+        <div class="onboarding-title">${title}</div>
+        <div class="onboarding-subtitle">無理なく戻りやすい形を、先に軽く決めます。</div>
+
+        <div class="onboarding-section">
+          <div class="section-label">使いたい場面</div>
+          <div class="chip-grid" id="context-options"></div>
+        </div>
+
+        <div class="onboarding-section">
+          <div class="section-label">いちばん近い目的</div>
+          <div class="chip-grid" id="goal-options"></div>
+        </div>
+
+        <div class="onboarding-section">
+          <div class="section-label">ふだん取りやすい時間</div>
+          <div class="chip-grid" id="duration-options"></div>
+        </div>
+
+        <div class="onboarding-section">
+          <div class="section-label">姿勢の好み</div>
+          <div class="chip-grid" id="posture-options"></div>
+        </div>
+
+        <div class="onboarding-section split">
+          <div>
+            <div class="section-label">音声の頻度</div>
+            <div class="chip-grid" id="voice-options"></div>
+          </div>
+          <div>
+            <div class="section-label">目の開け方</div>
+            <div class="chip-grid" id="eyes-options"></div>
+          </div>
+        </div>
+
+        <label class="watch-option">
+          <input type="checkbox" id="watch-opt-in" ${preferences.watch_opt_in ? 'checked' : ''} />
+          <span>見守り camera を使う</span>
+        </label>
+        <div class="watch-note">初期値は OFF です。session 中だけ使い、見える事実だけを扱います。内面は断定しません。</div>
+        <div class="safety-note">強い不安や過覚醒がある日は、深掘りより grounding を優先します。つらくなったらいつでも止めて大丈夫です。</div>
+
+        <div class="onboarding-actions">
+          <button class="secondary-btn" id="onboarding-skip-btn">${options.editing ? '戻る' : 'あとで'}</button>
+          <button class="primary-btn" id="onboarding-save-btn">保存する</button>
+        </div>
+      </div>
+    </div>
+    <style>
+      .onboarding-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 1.5rem; }
+      .onboarding-card { width: 100%; max-width: 720px; background: rgba(22, 21, 19, 0.86); border: 1px solid #302d27; border-radius: 12px; padding: 1.4rem; display: flex; flex-direction: column; gap: 1rem; }
+      .onboarding-title { font-size: 1.2rem; color: #ece7df; }
+      .onboarding-subtitle { font-size: 0.9rem; color: #9a9488; line-height: 1.7; }
+      .onboarding-section { display: flex; flex-direction: column; gap: 0.55rem; }
+      .onboarding-section.split { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+      .section-label { font-size: 0.78rem; color: #8a8478; letter-spacing: 0.08em; text-transform: uppercase; }
+      .chip-grid { display: flex; flex-wrap: wrap; gap: 0.55rem; }
+      .chip-btn { background: transparent; border: 1px solid #4a4840; color: #d8d2c8; padding: 0.55rem 0.8rem; border-radius: 999px; cursor: pointer; font-size: 0.85rem; }
+      .chip-btn.selected { border-color: #a19278; color: #fff7ea; background: rgba(93, 78, 40, 0.18); }
+      .watch-option { display: flex; align-items: center; gap: 0.6rem; color: #d8d2c8; font-size: 0.88rem; }
+      .watch-note, .safety-note { font-size: 0.8rem; color: #8a8478; line-height: 1.7; }
+      .onboarding-actions { display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 0.5rem; }
+      .primary-btn, .secondary-btn { background: transparent; border: 1px solid #4a4840; color: #e8e4dc; padding: 0.72rem 1rem; border-radius: 6px; cursor: pointer; font-size: 0.9rem; }
+      .primary-btn { border-color: #7d6f57; }
+      @media (max-width: 640px) {
+        .onboarding-section.split { grid-template-columns: 1fr; }
+        .onboarding-actions { flex-direction: column-reverse; }
+      }
+    </style>
+  `;
+    const contextOptionsEl = container.querySelector('#context-options');
+    const goalOptionsEl = container.querySelector('#goal-options');
+    const durationOptionsEl = container.querySelector('#duration-options');
+    const postureOptionsEl = container.querySelector('#posture-options');
+    const voiceOptionsEl = container.querySelector('#voice-options');
+    const eyesOptionsEl = container.querySelector('#eyes-options');
+    function renderChips(root, items, selectedValues, onToggle, single = false) {
+        root.innerHTML = items.map(([value, label]) => `
+      <button class="chip-btn ${selectedValues.includes(value) ? 'selected' : ''}" data-value="${value}">
+        ${label}
+      </button>
+    `).join('');
+        root.querySelectorAll('.chip-btn').forEach(btn => {
+            btn.addEventListener('click', event => {
+                event.preventDefault();
+                const value = btn.dataset.value;
+                onToggle(value);
+                if (single) {
+                    root.querySelectorAll('.chip-btn').forEach(item => item.classList.remove('selected'));
+                    btn.classList.add('selected');
+                }
+                else {
+                    btn.classList.toggle('selected');
+                }
+            });
+        });
+    }
+    function renderDurationChips() {
+        durationOptionsEl.innerHTML = DURATION_OPTIONS.map(value => `
+      <button class="chip-btn ${preferences.preferred_durations.includes(value) ? 'selected' : ''}" data-value="${value}">
+        ${value}分
+      </button>
+    `).join('');
+        durationOptionsEl.querySelectorAll('.chip-btn').forEach(btn => {
+            btn.addEventListener('click', event => {
+                event.preventDefault();
+                const value = Number(btn.dataset.value);
+                preferences.preferred_durations = preferences.preferred_durations.includes(value)
+                    ? preferences.preferred_durations.filter(item => item !== value)
+                    : [...preferences.preferred_durations, value].sort((a, b) => a - b);
+                btn.classList.toggle('selected');
+            });
+        });
+    }
+    renderChips(contextOptionsEl, CONTEXT_OPTIONS, preferences.use_contexts, value => {
+        preferences.use_contexts = toggleValue(preferences.use_contexts, value);
+    });
+    renderChips(goalOptionsEl, PRIMARY_GOALS, preferences.primary_goal ? [preferences.primary_goal] : [], value => {
+        preferences.primary_goal = value;
+        goals.stress = goalIntensity(value, 'stress');
+        goals.focus = goalIntensity(value, 'focus');
+        goals.sleep = goalIntensity(value, 'sleep');
+        goals.kindness = goalIntensity(value, 'kindness');
+        goals.emotional_regulation = goalIntensity(value, 'emotional_regulation');
+        goals.general_presence = goalIntensity(value, 'general_presence');
+    }, true);
+    renderDurationChips();
+    renderChips(postureOptionsEl, POSTURE_OPTIONS, preferences.posture_preferences, value => {
+        preferences.posture_preferences = toggleValue(preferences.posture_preferences, value);
+    });
+    renderChips(voiceOptionsEl, VOICE_OPTIONS, [preferences.preferred_voice_density], value => {
+        preferences.preferred_voice_density = value;
+    }, true);
+    renderChips(eyesOptionsEl, EYES_OPTIONS, [preferences.eyes_open_preference], value => {
+        preferences.eyes_open_preference = value;
+    }, true);
+    container.querySelector('#onboarding-skip-btn').addEventListener('click', () => {
+        options.onDone();
+    });
+    container.querySelector('#onboarding-save-btn').addEventListener('click', async () => {
+        preferences.watch_opt_in = container.querySelector('#watch-opt-in').checked;
+        preferences.onboarding_completed = true;
+        if (preferences.preferred_durations.length === 0) {
+            preferences.preferred_durations = [2, 3, 5];
+        }
+        await Promise.all([
+            saveUserPreferences(preferences),
+            saveUserGoals(goals),
+        ]).catch(() => { });
+        options.onDone();
+    });
+}

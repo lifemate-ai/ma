@@ -117,13 +117,13 @@ pub fn make_llm(http: reqwest::Client) -> Arc<dyn CompanionLLM + Send + Sync> {
 
 pub async fn greet(
     State(state): State<AppState>,
-    claims: Option<Extension<Claims>>,
+    Extension(claims): Extension<Claims>,
     Json(req): Json<GreetRequest>,
 ) -> Result<Json<TextResponse>, StatusCode> {
-    let user_id = claims.as_ref().map(|Extension(c)| c.sub.as_str());
+    let user_id = claims.sub;
     let presence = presence::build_presence_snapshot(
         &state.db,
-        user_id,
+        Some(user_id.as_str()),
         &presence::PresenceEvent {
             phase: "greet".into(),
             time_of_day: req.time_of_day.clone(),
@@ -157,13 +157,13 @@ pub async fn greet(
 
 pub async fn guide(
     State(state): State<AppState>,
-    claims: Option<Extension<Claims>>,
+    Extension(claims): Extension<Claims>,
     Json(req): Json<GuideRequest>,
 ) -> Result<Json<TextResponse>, StatusCode> {
-    let user_id = claims.as_ref().map(|Extension(c)| c.sub.as_str());
+    let user_id = claims.sub;
     let presence = presence::build_presence_snapshot(
         &state.db,
-        user_id,
+        Some(user_id.as_str()),
         &presence::PresenceEvent {
             phase: req.phase.clone(),
             time_of_day: "unknown".into(),
@@ -191,13 +191,13 @@ pub async fn guide(
 
 pub async fn close_session(
     State(state): State<AppState>,
-    claims: Option<Extension<Claims>>,
+    Extension(claims): Extension<Claims>,
     Json(req): Json<CloseRequest>,
 ) -> Result<Json<TextResponse>, StatusCode> {
-    let user_id = claims.as_ref().map(|Extension(c)| c.sub.as_str());
+    let user_id = claims.sub;
     let presence = presence::build_presence_snapshot(
         &state.db,
-        user_id,
+        Some(user_id.as_str()),
         &presence::PresenceEvent {
             phase: "close".into(),
             time_of_day: "unknown".into(),
@@ -243,13 +243,13 @@ pub struct ObservationResponse {
 
 pub async fn loop_back(
     State(state): State<AppState>,
-    claims: Option<Extension<Claims>>,
+    Extension(claims): Extension<Claims>,
     Json(req): Json<LoopRequest>,
 ) -> Result<Json<TextResponse>, StatusCode> {
-    let user_id = claims.as_ref().map(|Extension(c)| c.sub.as_str());
+    let user_id = claims.sub;
     let presence = presence::build_presence_snapshot(
         &state.db,
-        user_id,
+        Some(user_id.as_str()),
         &presence::PresenceEvent {
             phase: "journal".into(),
             time_of_day: "unknown".into(),
@@ -276,14 +276,14 @@ pub async fn loop_back(
 
 pub async fn sbnrr_step(
     State(state): State<AppState>,
-    claims: Option<Extension<Claims>>,
+    Extension(claims): Extension<Claims>,
     Json(req): Json<SbnrrStepRequest>,
 ) -> Result<Json<TextResponse>, StatusCode> {
     let step_prompt = prompt::sbnrr_step_prompt(&req.step);
-    let user_id = claims.as_ref().map(|Extension(c)| c.sub.as_str());
+    let user_id = claims.sub;
     let presence = presence::build_presence_snapshot(
         &state.db,
-        user_id,
+        Some(user_id.as_str()),
         &presence::PresenceEvent {
             phase: "sbnrr".into(),
             time_of_day: "unknown".into(),
@@ -311,10 +311,10 @@ pub async fn sbnrr_step(
 
 pub async fn observe(
     State(state): State<AppState>,
-    claims: Option<Extension<Claims>>,
+    Extension(claims): Extension<Claims>,
     Json(req): Json<ObserveRequest>,
 ) -> Result<Json<ObservationResponse>, StatusCode> {
-    let user_id = claims.as_ref().map(|Extension(c)| c.sub.as_str());
+    let user_id = claims.sub;
     let observation_id = uuid::Uuid::new_v4().to_string();
     let source = req
         .source
@@ -343,7 +343,7 @@ pub async fn observe(
 
     let _presence = presence::build_presence_snapshot(
         &state.db,
-        user_id,
+        Some(user_id.as_str()),
         &presence::PresenceEvent {
             phase: "observation".into(),
             time_of_day: "unknown".into(),
@@ -362,7 +362,13 @@ pub async fn observe(
         StatusCode::INTERNAL_SERVER_ERROR
     })?;
 
-    remember_observation(&state.db, user_id, &observation_id, &source, &summary)
+    remember_observation(
+        &state.db,
+        Some(user_id.as_str()),
+        &observation_id,
+        &source,
+        &summary,
+    )
         .await
         .map_err(|e| {
             tracing::error!("Companion observation memory error: {e}");

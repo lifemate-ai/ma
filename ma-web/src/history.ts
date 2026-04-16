@@ -1,12 +1,17 @@
-import { getUnifiedHistory, TimelineEntry, SessionMode } from './api'
+import { clearUserData, getUnifiedHistory, TimelineEntry } from './api'
 import { formatRelativeDate, formatJapaneseDate, formatDuration, groupByDate } from './date-utils'
 import { mountInsights } from './insights'
+import { clearLocalStats } from './store'
 
 const MODE_LABELS: Record<string, string> = {
   yasashii: 'やさしい呼吸',
   motto_yasashii: 'ただ座る',
   body_scan: 'ボディスキャン',
   sbnrr: 'SBNRR',
+  breathing_space: 'Breathing Space',
+  self_compassion_break: 'Self-Compassion Break',
+  stress_reset: 'Stress Reset',
+  sleep_winddown: 'Sleep Winddown',
   emotion_mapping: '感情マッピング',
   gratitude: '感謝',
   compassion: '慈悲の瞑想',
@@ -78,7 +83,11 @@ function truncate(s: string, len: number): string {
   return s.length <= len ? s : s.slice(0, len) + '…'
 }
 
-export async function mountHistory(container: HTMLElement, onBack: () => void) {
+export async function mountHistory(
+  container: HTMLElement,
+  onBack: () => void,
+  onEditPreferences: () => void,
+) {
   container.innerHTML = `
     <div class="history-screen">
       <div class="history-header">
@@ -97,6 +106,11 @@ export async function mountHistory(container: HTMLElement, onBack: () => void) {
       .history-title { font-size: 0.9rem; color: #5a5850; letter-spacing: 0.1em; }
       .history-content { flex: 1; overflow-y: auto; padding: 1.5rem; display: flex; flex-direction: column; align-items: center; }
       .history-inner { width: 100%; max-width: 320px; }
+      .history-tools { display: grid; grid-template-columns: 1fr; gap: 0.6rem; margin-bottom: 1.5rem; }
+      .history-tool-btn { background: transparent; border: 1px solid #3a3830; color: #d3cdc4; border-radius: 8px; padding: 0.75rem 0.9rem; font-size: 0.84rem; text-align: left; cursor: pointer; line-height: 1.6; }
+      .history-tool-btn:hover { border-color: #62584a; }
+      .history-tool-label { display: block; color: #ece7df; margin-bottom: 0.15rem; }
+      .history-tool-note { display: block; color: #8a8478; font-size: 0.76rem; }
       .date-group { margin-bottom: 2rem; }
       .date-header { font-size: 0.75rem; color: #5a5850; letter-spacing: 0.1em; margin-bottom: 0.75rem; padding-bottom: 0.4rem; border-bottom: 1px solid #2a2820; }
       .timeline-entry { border-left: 2px solid #3a3830; padding: 0.75rem 0 0.75rem 1rem; margin-bottom: 0.75rem; }
@@ -117,18 +131,54 @@ export async function mountHistory(container: HTMLElement, onBack: () => void) {
   container.querySelector('#back-btn')!.addEventListener('click', onBack)
 
   const contentEl = container.querySelector('#history-content') as HTMLElement
-  const { entries } = await getUnifiedHistory()
-
-  if (entries.length === 0) {
-    contentEl.innerHTML = '<div class="empty-text">まだ記録がありません</div>'
-    return
-  }
-
   const inner = document.createElement('div')
   inner.className = 'history-inner'
 
   // インサイトを上部に表示（非同期）
   mountInsights(inner)
+
+  const toolsEl = document.createElement('div')
+  toolsEl.className = 'history-tools'
+  toolsEl.innerHTML = `
+    <button class="history-tool-btn" id="edit-preferences-btn">
+      <span class="history-tool-label">整え方を見直す</span>
+      <span class="history-tool-note">時間、音声の頻度、camera の使い方を変えます。</span>
+    </button>
+    <button class="history-tool-btn" id="clear-observations-btn">
+      <span class="history-tool-label">見守り記録だけ消す</span>
+      <span class="history-tool-note">camera から残った observation だけを消します。</span>
+    </button>
+    <button class="history-tool-btn" id="clear-all-data-btn">
+      <span class="history-tool-label">この端末の記録を消す</span>
+      <span class="history-tool-note">session / journal / insight のもとになる記録を消します。</span>
+    </button>
+  `
+  inner.appendChild(toolsEl)
+
+  ;(toolsEl.querySelector('#edit-preferences-btn') as HTMLButtonElement).addEventListener('click', onEditPreferences)
+  ;(toolsEl.querySelector('#clear-observations-btn') as HTMLButtonElement).addEventListener('click', async () => {
+    if (!window.confirm('見守り記録だけを消しますか？')) return
+    await clearUserData('observations').catch(() => undefined)
+    window.location.reload()
+  })
+  ;(toolsEl.querySelector('#clear-all-data-btn') as HTMLButtonElement).addEventListener('click', async () => {
+    if (!window.confirm('この端末の記録を消しますか？')) return
+    await clearUserData('all').catch(() => undefined)
+    clearLocalStats()
+    window.location.reload()
+  })
+
+  const { entries } = await getUnifiedHistory()
+
+  if (entries.length === 0) {
+    const emptyEl = document.createElement('div')
+    emptyEl.className = 'empty-text'
+    emptyEl.textContent = 'まだ記録がありません'
+    inner.appendChild(emptyEl)
+    contentEl.innerHTML = ''
+    contentEl.appendChild(inner)
+    return
+  }
 
   const grouped = groupByDate(entries, (e: TimelineEntry) => e.timestamp)
 

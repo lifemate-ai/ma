@@ -1,6 +1,6 @@
-# Ma
+# komorebi
 
-`Ma` は、音声ガイダンス付きのマインドフルネス実践アプリです。  
+`komorebi` は、音声ガイダンス付きの短時間マインドフルネス実践アプリです。  
 単なるタイマーや定型文ではなく、同じ相手が戻ってくる感覚を持てる companion を目指していて、セッション履歴、ジャーナル、チェックイン、観察メモをもとに応答の重心が少しずつ変わります。
 
 ## できること
@@ -41,6 +41,27 @@
 - OpenAI か Claude の API key
 - ElevenLabs API key
 
+## クイックスタート
+
+一番簡単なのは root でこれです。
+
+```bash
+./run.sh
+```
+
+- `ma-web` の依存がなければ install
+- frontend を build
+- `ma-server` を起動
+
+開発中に frontend の hot reload も欲しいならこちらです。
+
+```bash
+./dev.sh
+```
+
+- API server: `http://localhost:3001`
+- Vite dev server: `http://localhost:5173`
+
 ## セットアップ
 
 ### 1. 環境変数を用意する
@@ -77,8 +98,7 @@ cargo run -p ma-server
 
 デフォルトでは `http://localhost:3001` で待ち受けます。
 
-ただし、現状の認証設定は特定の Cognito Hosted UI / callback URL を前提にコードへ固定されています。  
-local でそのままログインまで通したい場合は、後述の認証設定も自分の環境へ合わせて更新してください。
+認証は env で切り替えます。local 開発で Hosted UI を使わない場合は、`.env` で `AUTH_MODE=disabled` と `VITE_AUTH_MODE=disabled` を使えます。
 
 ## 使い方
 
@@ -122,15 +142,20 @@ cd ma-web && npm test
 
 ## いまの前提と注意点
 
-### 認証設定はコードに埋め込まれています
+### 認証は env で切り替えます
 
-現状、Cognito の設定値はここにハードコードされています。
+主な設定値:
 
-- `ma-web/src/auth.ts`
-- `ma-server/src/auth.rs`
+- `AUTH_MODE`
+- `COGNITO_REGION`
+- `COGNITO_USER_POOL_ID`
+- `COGNITO_CLIENT_ID`
+- `VITE_AUTH_MODE`
+- `VITE_COGNITO_DOMAIN`
+- `VITE_COGNITO_CLIENT_ID`
+- `VITE_COGNITO_REDIRECT_URI`
 
-そのまま fork して別環境で動かす場合は、この値を自分の Cognito 設定に合わせて更新してください。  
-特に frontend の `REDIRECT_URI` が固定なので、ここを変えないと local login は戻ってきません。
+local 開発では `disabled`、Cognito を使う環境では `cognito` にしてください。
 
 ### frontend は embedded 配信です
 
@@ -158,6 +183,18 @@ server を触ったとき:
 
 ```bash
 cargo test -p ma-server
+```
+
+まとめて起動したいとき:
+
+```bash
+./run.sh
+```
+
+開発用に server と Vite を同時起動したいとき:
+
+```bash
+./dev.sh
 ```
 
 ## ライセンス

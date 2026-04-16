@@ -19,16 +19,15 @@ const WEEK_MODES: &[&[&str]] = &[
 
 pub async fn get_status(
     State(state): State<AppState>,
-    claims: Option<Extension<Claims>>,
+    Extension(claims): Extension<Claims>,
 ) -> Result<Json<CurriculumStatus>, StatusCode> {
-    let user_id = claims.map(|Extension(c)| c.sub);
     let conn = state.db.connect().map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-    let user_filter = user_id.as_deref().unwrap_or("");
+    let user_filter = claims.sub;
 
     // 全セッション数と初回日時
     let mut rows = conn.query(
-        "SELECT COUNT(*), MIN(started_at) FROM sessions WHERE (user_id = ?1 OR ?1 = '')",
-        libsql::params![user_filter]
+        "SELECT COUNT(*), MIN(started_at) FROM sessions WHERE user_id = ?1",
+        libsql::params![user_filter.clone()]
     ).await.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
     let (total_sessions, first_session_at): (u32, Option<String>) =
@@ -43,7 +42,7 @@ pub async fn get_status(
 
     // 試したことのあるモード
     let mut rows = conn.query(
-        "SELECT DISTINCT mode FROM sessions WHERE (user_id = ?1 OR ?1 = '')",
+        "SELECT DISTINCT mode FROM sessions WHERE user_id = ?1",
         libsql::params![user_filter]
     ).await.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 

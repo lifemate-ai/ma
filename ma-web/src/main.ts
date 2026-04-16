@@ -2,15 +2,30 @@ import { mountSession } from './session'
 import { mountJournal } from './journal'
 import { mountHistory } from './history'
 import { ensureAuth } from './auth'
+import { getUserGoals, getUserPreferences, UserGoals, UserPreferences } from './api'
+import { mountOnboarding } from './onboarding'
 
-type View = 'session' | 'journal' | 'history'
+type View = 'session' | 'journal' | 'history' | 'onboarding'
 
 const app = document.getElementById('app')!
+let cachedPreferences: UserPreferences | null = null
+let cachedGoals: UserGoals | null = null
 
-function render(view: View, opts?: { sessionId?: string }) {
+function render(view: View, opts?: { sessionId?: string; editing?: boolean }) {
   app.innerHTML = ''
-  if (view === 'session') {
-    mountSession(app, (sessionId) => {
+  if (view === 'onboarding') {
+    mountOnboarding(app, {
+      initialPreferences: cachedPreferences ?? undefined,
+      initialGoals: cachedGoals ?? undefined,
+      editing: opts?.editing,
+      onDone: async () => {
+        cachedPreferences = await getUserPreferences().catch(() => cachedPreferences)
+        cachedGoals = await getUserGoals().catch(() => cachedGoals)
+        render('session')
+      },
+    })
+  } else if (view === 'session') {
+    mountSession(app, cachedPreferences ?? undefined, cachedGoals ?? undefined, (sessionId) => {
       render('journal', { sessionId })
     }, () => render('history'))
   } else if (view === 'journal') {
@@ -18,12 +33,19 @@ function render(view: View, opts?: { sessionId?: string }) {
       render('session')
     })
   } else if (view === 'history') {
-    mountHistory(app, () => render('session'))
+    mountHistory(app, () => render('session'), () => render('onboarding', { editing: true }))
   }
 }
 
 // アプリ起動: 認証確認してからrender
-ensureAuth().then(ok => {
-  if (ok) render('session')
+ensureAuth().then(async ok => {
+  if (!ok) return
+  cachedPreferences = await getUserPreferences().catch(() => null)
+  cachedGoals = await getUserGoals().catch(() => null)
+  if (!cachedPreferences?.onboarding_completed) {
+    render('onboarding')
+    return
+  }
+  render('session')
   // ok=falseはリダイレクト中なので何もしない
 })

@@ -3,7 +3,9 @@ mod tts;
 mod journal;
 mod curriculum;
 mod insights;
+mod recommendations;
 mod auth;
+mod profile;
 
 use std::sync::Arc;
 use axum::{Router, routing::{get, post}, http::{StatusCode, Uri, header}, response::Response, body::Body, middleware};
@@ -25,6 +27,7 @@ pub struct AppState {
     pub http: reqwest::Client,
     pub llm: Arc<dyn companion::CompanionLLM + Send + Sync>,
     pub jwk_cache: auth::JwkCache,
+    pub auth_config: auth::AuthConfig,
 }
 
 // ── 静的ファイル配信 ─────────────────────────────────────────────
@@ -81,6 +84,7 @@ async fn build_app() -> Router {
     {
         let conn = db.connect().expect("DB connect failed");
         journal::migrate(&conn).await.expect("Migration failed");
+        profile::migrate(&conn).await.expect("Profile migration failed");
         companion::migrate(&conn).await.expect("Companion migration failed");
     }
 
@@ -89,6 +93,7 @@ async fn build_app() -> Router {
         http,
         llm,
         jwk_cache: auth::JwkCache::new(),
+        auth_config: auth::AuthConfig::from_env().expect("Invalid auth configuration"),
     };
 
     let cors = CorsLayer::new()
@@ -107,11 +112,19 @@ async fn build_app() -> Router {
         .route("/api/tts",              post(tts::synthesize))
         .route("/api/tts/stream",       post(tts::synthesize_stream))
         .route("/api/sessions",         post(journal::save_session))
+        .route("/api/session-precheck", post(journal::save_session_precheck))
+        .route("/api/session-postcheck", post(journal::save_session_postcheck))
+        .route("/api/session-events",   post(journal::save_session_event))
         .route("/api/journals",         post(journal::save_journal))
         .route("/api/history",          get(journal::get_history))
         .route("/api/history/unified",  get(journal::get_unified_history))
         .route("/api/checkins",         post(journal::save_checkin))
+        .route("/api/recommendation-log", post(journal::save_recommendation_log))
+        .route("/api/profile/preferences", get(profile::get_preferences).post(profile::save_preferences))
+        .route("/api/profile/goals", get(profile::get_goals).post(profile::save_goals))
+        .route("/api/data/clear", post(profile::clear_user_data))
         .route("/api/curriculum/status", get(curriculum::get_status))
+        .route("/api/recommendations", get(recommendations::get_recommendations))
         .route("/api/insights",         get(insights::get_insights))
         .fallback(serve_static)
         .layer(middleware::from_fn_with_state(state.clone(), auth::auth_middleware))
