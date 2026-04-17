@@ -81,51 +81,84 @@ export function mountSession(
 
   container.innerHTML = `
     <div class="session-screen">
-      <div class="greeting-area" id="greeting-text"></div>
-      <div class="recommendation-panel hidden" id="recommendation-panel">
-        <div class="recommendation-head">今の自分に合う3つ</div>
-        <div class="recommendation-list" id="recommendation-list"></div>
-      </div>
-      <div class="watch-panel" id="watch-panel">
-        <div class="watch-head">見守り</div>
-        <div class="watch-status" id="watch-status">自分の顔を見ながら座れます。camera は session 中だけ使い、見える事実だけを受け取ります。初期値は OFF です。</div>
-        <video class="watch-preview hidden" id="watch-preview" autoplay muted playsinline></video>
-        <button class="watch-btn" id="watch-btn">preview と見守りをオンにする</button>
-      </div>
-      <div class="mode-select" id="mode-select">
-        <button class="mode-btn" data-mode="yasashii">
-          <span class="mode-title">やさしい</span>
-          <span class="mode-desc">呼吸に注意を向ける</span>
-        </button>
-        <button class="mode-btn" data-mode="motto_yasashii">
-          <span class="mode-title">もっとやさしい</span>
-          <span class="mode-desc">ただ、座る</span>
-        </button>
-        <button class="mode-btn" data-mode="body_scan">
-          <span class="mode-title">体をめぐる</span>
-          <span class="mode-desc">ボディスキャン</span>
-        </button>
-        <button class="mode-btn" data-mode="sbnrr">
-          <span class="mode-title">SBNRR</span>
-          <span class="mode-desc">止まる・呼吸・注意・反省・反応</span>
-        </button>
-        <button class="mode-btn" data-mode="emotion_mapping">
-          <span class="mode-title">感情をたどる</span>
-          <span class="mode-desc">感情マッピング</span>
-        </button>
-        <button class="mode-btn" data-mode="gratitude">
-          <span class="mode-title">感謝する</span>
-          <span class="mode-desc">感謝プラクティス</span>
-        </button>
-        <button class="mode-btn" data-mode="compassion">
-          <span class="mode-title">思いを届ける</span>
-          <span class="mode-desc">慈悲の瞑想</span>
-        </button>
-        <button class="mode-btn" data-mode="checkin">
-          <span class="mode-title">チェックイン</span>
-          <span class="mode-desc">今の自分を知る</span>
-        </button>
-      </div>
+      <aside class="session-intro" id="session-intro">
+        <div class="session-brandbar">
+          <div>
+            <div class="session-brand">komorebi</div>
+            <div class="session-brand-note">calm-first mindful companion</div>
+          </div>
+          <div id="home-history">
+            <button class="history-btn" id="history-btn">記録を見る</button>
+          </div>
+        </div>
+
+        <div class="session-hero">
+          <div class="session-kicker">re-entry friendly</div>
+          <div class="session-title">いま戻りやすいところから。</div>
+          <div class="greeting-area" id="greeting-text"></div>
+          <div class="session-note">2分でも大丈夫です。途中で止めても、切り上げても、失敗にはなりません。</div>
+        </div>
+
+        <div class="watch-panel" id="watch-panel">
+          <div class="watch-head">見守り</div>
+          <div class="watch-status" id="watch-status">自分の顔を見ながら座れます。camera は session 中だけ使い、見える事実だけを受け取ります。初期値は OFF です。</div>
+          <video class="watch-preview hidden" id="watch-preview" autoplay muted playsinline></video>
+          <button class="watch-btn" id="watch-btn">preview と見守りをオンにする</button>
+        </div>
+      </aside>
+
+      <main class="session-main" id="session-main">
+        <section class="recommendation-panel hidden" id="recommendation-panel">
+          <div class="recommendation-head">今の自分に合う3つ</div>
+          <div class="recommendation-list" id="recommendation-list"></div>
+        </section>
+
+        <section class="mode-section">
+          <div class="mode-section-head">
+            <div>
+              <div class="section-label">practice library</div>
+              <div class="mode-section-title">今の自分に合う入り口</div>
+            </div>
+            <div class="mode-note">短い入口を前に置いて、必要なときだけ深く入れるようにしています。</div>
+          </div>
+
+          <div class="mode-select" id="mode-select">
+            <button class="mode-btn" data-mode="yasashii">
+              <span class="mode-title">やさしい</span>
+              <span class="mode-desc">呼吸に注意を向ける</span>
+            </button>
+            <button class="mode-btn" data-mode="motto_yasashii">
+              <span class="mode-title">もっとやさしい</span>
+              <span class="mode-desc">ただ、座る</span>
+            </button>
+            <button class="mode-btn" data-mode="body_scan">
+              <span class="mode-title">体をめぐる</span>
+              <span class="mode-desc">ボディスキャン</span>
+            </button>
+            <button class="mode-btn" data-mode="sbnrr">
+              <span class="mode-title">SBNRR</span>
+              <span class="mode-desc">止まる・呼吸・注意・反省・反応</span>
+            </button>
+            <button class="mode-btn" data-mode="emotion_mapping">
+              <span class="mode-title">感情をたどる</span>
+              <span class="mode-desc">感情マッピング</span>
+            </button>
+            <button class="mode-btn" data-mode="gratitude">
+              <span class="mode-title">感謝する</span>
+              <span class="mode-desc">感謝プラクティス</span>
+            </button>
+            <button class="mode-btn" data-mode="compassion">
+              <span class="mode-title">思いを届ける</span>
+              <span class="mode-desc">慈悲の瞑想</span>
+            </button>
+            <button class="mode-btn" data-mode="checkin">
+              <span class="mode-title">チェックイン</span>
+              <span class="mode-desc">今の自分を知る</span>
+            </button>
+          </div>
+        </section>
+      </main>
+
       <div class="running-area hidden" id="running-area">
         <div class="timer-display" id="timer-display">2:00</div>
         <div class="breath-circle-wrap hidden" id="breath-circle-wrap">
@@ -203,76 +236,14 @@ export function mountSession(
         <button class="history-link" id="closing-history-link">記録を見る</button>
       </div>
     </div>
-    <style>
-      .session-screen { height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem; gap: 2rem; }
-      .greeting-area { font-size: 1.1rem; line-height: 1.8; text-align: center; color: #c8c4bc; max-width: 320px; min-height: 3em; }
-      .recommendation-panel { width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 0.75rem; }
-      .recommendation-head { font-size: 0.78rem; color: #8a8478; letter-spacing: 0.08em; text-transform: uppercase; text-align: center; }
-      .recommendation-list { display: grid; grid-template-columns: 1fr; gap: 0.65rem; width: 100%; }
-      .recommendation-card { background: rgba(22, 21, 19, 0.72); border: 1px solid #353129; border-radius: 8px; padding: 0.9rem 1rem; text-align: left; cursor: pointer; color: inherit; }
-      .recommendation-card:hover { border-color: #5a5448; }
-      .recommendation-title { font-size: 0.92rem; color: #ddd6cc; margin-bottom: 0.3rem; }
-      .recommendation-rationale { font-size: 0.78rem; color: #8a8478; line-height: 1.6; }
-      .recommendation-meta { font-size: 0.72rem; color: #6e675b; margin-top: 0.45rem; }
-      .watch-panel { width: 100%; max-width: 320px; border: 1px solid #302d27; border-radius: 8px; padding: 0.9rem 1rem; display: flex; flex-direction: column; gap: 0.65rem; background: rgba(22, 21, 19, 0.72); }
-      .watch-head { font-size: 0.82rem; color: #a69a87; letter-spacing: 0.08em; text-transform: uppercase; }
-      .watch-status { font-size: 0.8rem; line-height: 1.6; color: #8a8478; min-height: 2.6em; }
-      .watch-preview { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 6px; border: 1px solid #3a3830; background: #111; transform: scaleX(-1); }
-      .watch-btn { align-self: flex-start; background: transparent; border: 1px solid #4a4840; color: #d9d3ca; padding: 0.55rem 0.9rem; cursor: pointer; border-radius: 999px; font-size: 0.82rem; }
-      .watch-btn:hover { border-color: #8a8478; }
-      .mode-select { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; width: 100%; max-width: 480px; }
-      .mode-btn { background: transparent; border: 1px solid #3a3830; color: #e8e4dc; padding: 0.9rem 1rem; cursor: pointer; text-align: left; transition: border-color 0.2s, background 0.2s; border-radius: 4px; }
-      .mode-btn:hover { border-color: #6a6458; background: #222; }
-      .mode-title { display: block; font-size: 0.95rem; margin-bottom: 0.2rem; }
-      .mode-desc { display: block; font-size: 0.7rem; color: #7a7468; }
-      .running-area { display: flex; flex-direction: column; align-items: center; gap: 1.25rem; width: 100%; max-width: 360px; }
-      .sheet-area { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; padding: 1rem; background: rgba(8, 8, 8, 0.72); backdrop-filter: blur(8px); z-index: 10; }
-      .sheet-card { width: 100%; max-width: 640px; background: rgba(22, 21, 19, 0.94); border: 1px solid #353129; border-radius: 12px; padding: 1.1rem; display: flex; flex-direction: column; gap: 0.85rem; }
-      .sheet-title { font-size: 1rem; color: #ece7df; }
-      .sheet-subtitle { font-size: 0.82rem; color: #8a8478; line-height: 1.7; }
-      .sheet-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; }
-      .sheet-field { display: flex; flex-direction: column; gap: 0.35rem; font-size: 0.78rem; color: #8a8478; }
-      .sheet-field select { background: #171614; border: 1px solid #3a3830; color: #ece7df; padding: 0.65rem 0.75rem; border-radius: 6px; font-size: 0.9rem; }
-      .sheet-actions { display: flex; justify-content: flex-end; gap: 0.75rem; }
-      .timer-display { font-size: 2.5rem; color: #c8c4bc; letter-spacing: 0.05em; font-variant-numeric: tabular-nums; }
-      .breath-circle-wrap { position: relative; width: 140px; height: 140px; display: flex; align-items: center; justify-content: center; }
-      .breath-circle { position: absolute; inset: 0; border-radius: 50%; border: 2px solid #9a9488; background: radial-gradient(circle, #3a3830 0%, transparent 70%); animation: breathe 4s ease-in-out infinite; }
-      @keyframes breathe { 0%,100% { transform: scale(1); opacity: 0.6; box-shadow: 0 0 8px #4a4840; } 50% { transform: scale(1.18); opacity: 1; box-shadow: 0 0 24px #7a7468; } }
-      .breath-cue { position: relative; font-size: 0.85rem; color: #c8c4bc; letter-spacing: 0.1em; pointer-events: none; transition: opacity 0.6s ease-in-out; }
-      .mode-hint { font-size: 0.8rem; color: #6a6458; text-align: center; max-width: 280px; line-height: 1.6; }
-      .running-guide { font-size: 1rem; color: #c8c4bc; text-align: center; max-width: 300px; line-height: 1.8; min-height: 4.5em; }
-      .body-scan-guide { font-size: 1.05rem; color: #c8c4bc; text-align: center; max-width: 300px; line-height: 1.9; min-height: 4.5em; }
-      .safety-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; width: 100%; }
-      .secondary-btn, .stop-btn, .extend-btn, .journal-btn { background: transparent; border: 1px solid #4a4840; color: #d8d2c8; font-size: 0.85rem; cursor: pointer; padding: 0.65rem 0.9rem; border-radius: 4px; }
-      .secondary-btn:hover, .stop-btn:hover, .extend-btn:hover, .journal-btn:hover { border-color: #8a8478; color: #f0ece4; }
-      .stop-btn { color: #8a8478; }
-      .mode-btn.suggested { border-color: #5a5448; }
-      .mode-btn.suggested .mode-title::after { content: ' ·'; color: #7a7060; }
-      .extending-area { display: flex; flex-direction: column; align-items: center; gap: 1.5rem; }
-      .extending-text { font-size: 1rem; color: #c8c4bc; }
-      .end-btn { background: transparent; border: none; color: #5a5850; font-size: 0.8rem; cursor: pointer; }
-      .closing-area { display: flex; flex-direction: column; align-items: center; gap: 1.5rem; }
-      .closing-text { font-size: 1rem; color: #c8c4bc; text-align: center; max-width: 300px; line-height: 1.8; }
-      .skip-btn { background: transparent; border: none; color: #5a5850; font-size: 0.8rem; cursor: pointer; }
-      .history-link { background: transparent; border: none; color: #4a4840; font-size: 0.75rem; cursor: pointer; }
-      .history-link:hover { color: #7a7468; }
-      .mode-area-bottom { margin-top: 0.5rem; text-align: center; }
-      .history-btn { background: transparent; border: none; color: #4a4840; font-size: 0.75rem; cursor: pointer; }
-      .history-btn:hover { color: #7a7468; }
-      .hidden { display: none !important; }
-      @media (max-width: 640px) {
-        .session-screen { justify-content: flex-start; padding: 1.25rem 1rem 2rem; gap: 1.25rem; }
-        .mode-select { grid-template-columns: 1fr; }
-        .safety-actions { grid-template-columns: 1fr; }
-        .sheet-grid { grid-template-columns: 1fr; }
-        .sheet-actions { flex-direction: column-reverse; }
-      }
-    </style>
   `
 
+  const sessionIntroEl = container.querySelector('#session-intro') as HTMLElement
+  const sessionMainEl = container.querySelector('#session-main') as HTMLElement
   const modeSelectEl = container.querySelector('#mode-select') as HTMLElement
   const recommendationPanelEl = container.querySelector('#recommendation-panel') as HTMLElement
   const recommendationListEl = container.querySelector('#recommendation-list') as HTMLElement
+  const homeHistoryEl = container.querySelector('#home-history') as HTMLElement
   const watchStatusEl = container.querySelector('#watch-status') as HTMLElement
   const watchPreviewEl = container.querySelector('#watch-preview') as HTMLVideoElement
   const watchBtnEl = container.querySelector('#watch-btn') as HTMLButtonElement
@@ -312,11 +283,7 @@ export function mountSession(
     ? `${watchInactiveText} この端末では使ってよい設定ですが、毎回 OFF のままでも大丈夫です。`
     : watchInactiveText
 
-  const historyDiv = document.createElement('div')
-  historyDiv.className = 'mode-area-bottom'
-  historyDiv.innerHTML = '<button class="history-btn" id="history-btn">記録を見る</button>'
-  modeSelectEl.after(historyDiv)
-  historyDiv.querySelector('#history-btn')!.addEventListener('click', () => {
+  container.querySelector('#history-btn')!.addEventListener('click', () => {
     greetCancelled = true
     stopCurrentAudio()
     disableWatch()
@@ -378,9 +345,9 @@ export function mountSession(
     recommendationPanelEl.classList.remove('hidden')
     recommendationListEl.innerHTML = recommendations.map((rec, idx) => `
       <button class="recommendation-card" data-rec-index="${idx}">
-        <div class="recommendation-title">${idx + 1}. ${rec.title}</div>
+        <div class="recommendation-title">${rec.title}</div>
         <div class="recommendation-rationale">${rec.rationale}</div>
-        <div class="recommendation-meta">${rec.duration_minutes}分 · confidence ${Math.round(rec.confidence * 100)}%</div>
+        <div class="recommendation-meta">${rec.duration_minutes}分 · 合いそう ${Math.round(rec.confidence * 100)}%</div>
       </button>
     `).join('')
 
@@ -456,7 +423,9 @@ export function mountSession(
 
     recommendationPanelEl.classList.add('hidden')
     modeSelectEl.classList.add('hidden')
-    historyDiv.classList.add('hidden')
+    sessionIntroEl.classList.add('hidden')
+    sessionMainEl.classList.add('hidden')
+    homeHistoryEl.classList.add('hidden')
     runningAreaEl.classList.remove('hidden')
     extendingAreaEl.classList.add('hidden')
     closingAreaEl.classList.add('hidden')

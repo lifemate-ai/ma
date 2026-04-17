@@ -16,22 +16,17 @@ export function mountGratitude(container: HTMLElement, onDone: (sessionId?: stri
 
   container.innerHTML = `
     <div class="gratitude-screen">
-      <div id="gratitude-prompt" class="gratitude-prompt">今日、感謝していることをひとつ話してください。</div>
-      <div id="gratitude-round" class="gratitude-round">${currentRound} / ${GRATITUDE_ROUNDS}</div>
-      <textarea id="gratitude-input" class="gratitude-input" placeholder="感謝していること..." rows="3"></textarea>
-      <button class="mode-btn" id="gratitude-send-btn">送る</button>
-      <button class="stop-btn" id="gratitude-cancel-btn">やめる</button>
+      <div class="simple-practice-card">
+        <div class="simple-practice-eyebrow">gratitude</div>
+        <div id="gratitude-prompt" class="gratitude-prompt">今日、感謝していることをひとつ話してください。</div>
+        <div id="gratitude-round" class="gratitude-round">${currentRound} / ${GRATITUDE_ROUNDS}</div>
+        <textarea id="gratitude-input" class="gratitude-input" placeholder="感謝していること..." rows="3"></textarea>
+        <div class="simple-practice-actions">
+          <button class="mode-btn" id="gratitude-send-btn">送る</button>
+          <button class="stop-btn" id="gratitude-cancel-btn">やめる</button>
+        </div>
+      </div>
     </div>
-    <style>
-      .gratitude-screen { height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem; gap: 1.5rem; }
-      .gratitude-prompt { font-size: 1.1rem; color: #c8c4bc; text-align: center; max-width: 300px; line-height: 1.8; }
-      .gratitude-round { font-size: 0.85rem; color: #7a7468; }
-      .gratitude-input { background: #222; border: 1px solid #3a3830; color: #e8e4dc; padding: 1rem; font-size: 1rem; font-family: inherit; resize: none; border-radius: 4px; outline: none; width: 100%; max-width: 300px; line-height: 1.7; }
-      .gratitude-input:focus { border-color: #6a6458; }
-      .hidden { display: none !important; }
-      .mode-btn { background: transparent; border: 1px solid #4a4840; color: #e8e4dc; padding: 0.75rem 2rem; cursor: pointer; border-radius: 4px; font-size: 0.95rem; }
-      .stop-btn { background: transparent; border: 1px solid #4a4840; color: #8a8478; font-size: 0.85rem; cursor: pointer; padding: 0.5rem 1.5rem; border-radius: 4px; }
-    </style>
   `
 
   const input = container.querySelector('#gratitude-input') as HTMLTextAreaElement

@@ -60,7 +60,9 @@
 ```
 
 - API server: `http://localhost:3001`
-- Vite dev server: `http://localhost:5173`
+- Vite dev server: `http://localhost:4173`
+
+古い `localhost:5173` の service worker と衝突しやすい環境を避けるため、dev server は `4173` を使います。
 
 ## セットアップ
 
@@ -196,6 +198,8 @@ cargo test -p ma-server
 ```bash
 ./dev.sh
 ```
+
+dev UI は `http://localhost:4173` です。
 
 ## ライセンス
 

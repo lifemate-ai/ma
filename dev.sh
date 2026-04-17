@@ -24,6 +24,6 @@ echo "[komorebi] starting API server on http://localhost:3001 ..."
 ) &
 SERVER_PID=$!
 
-echo "[komorebi] starting web dev server on http://localhost:5173 ..."
+echo "[komorebi] starting web dev server on http://localhost:4173 ..."
 cd "$WEB_DIR"
 npm run dev -- --host 0.0.0.0

@@ -20,24 +20,18 @@ export function mountCheckin(container: HTMLElement, onDone: (sessionId?: string
 
   container.innerHTML = `
     <div class="checkin-screen">
-      <div class="checkin-title">チェックイン</div>
-      <div id="checkin-counter" class="checkin-counter">${currentIndex + 1} / ${CHECKIN_QUESTIONS.length}</div>
-      <div id="checkin-question" class="checkin-question">${CHECKIN_QUESTIONS[0].label}</div>
-      <input type="text" id="checkin-input" class="checkin-input" placeholder="ひとことで..." />
-      <button class="mode-btn" id="checkin-next-btn">次へ</button>
-      <button class="stop-btn" id="checkin-cancel-btn">やめる</button>
+      <div class="simple-practice-card">
+        <div class="simple-practice-eyebrow">check-in</div>
+        <div class="checkin-title">チェックイン</div>
+        <div id="checkin-counter" class="checkin-counter">${currentIndex + 1} / ${CHECKIN_QUESTIONS.length}</div>
+        <div id="checkin-question" class="checkin-question">${CHECKIN_QUESTIONS[0].label}</div>
+        <input type="text" id="checkin-input" class="checkin-input" placeholder="ひとことで..." />
+        <div class="simple-practice-actions">
+          <button class="mode-btn" id="checkin-next-btn">次へ</button>
+          <button class="stop-btn" id="checkin-cancel-btn">やめる</button>
+        </div>
+      </div>
     </div>
-    <style>
-      .checkin-screen { height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem; gap: 1.5rem; }
-      .checkin-title { font-size: 1.3rem; color: #e8e4dc; }
-      .checkin-counter { font-size: 0.85rem; color: #7a7468; }
-      .checkin-question { font-size: 1.1rem; color: #c8c4bc; text-align: center; }
-      .checkin-input { background: #222; border: 1px solid #3a3830; color: #e8e4dc; padding: 0.75rem; font-size: 1rem; border-radius: 4px; outline: none; width: 100%; max-width: 280px; }
-      .checkin-input:focus { border-color: #6a6458; }
-      .hidden { display: none !important; }
-      .mode-btn { background: transparent; border: 1px solid #4a4840; color: #e8e4dc; padding: 0.75rem 2rem; cursor: pointer; border-radius: 4px; font-size: 0.95rem; }
-      .stop-btn { background: transparent; border: 1px solid #4a4840; color: #8a8478; font-size: 0.85rem; cursor: pointer; padding: 0.5rem 1.5rem; border-radius: 4px; }
-    </style>
   `
 
   const counterEl = container.querySelector('#checkin-counter') as HTMLElement

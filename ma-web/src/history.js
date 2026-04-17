@@ -84,41 +84,18 @@ export async function mountHistory(container, onBack, onEditPreferences) {
         <div class="loading-text">読み込み中…</div>
       </div>
     </div>
-    <style>
-      .history-screen { min-height: 100vh; display: flex; flex-direction: column; padding: 0; }
-      .history-header { display: flex; align-items: center; gap: 1rem; padding: 1.25rem 1.5rem; border-bottom: 1px solid #2a2820; }
-      .back-btn { background: transparent; border: none; color: #7a7468; font-size: 0.85rem; cursor: pointer; padding: 0; font-family: inherit; }
-      .back-btn:hover { color: #c8c4bc; }
-      .history-title { font-size: 0.9rem; color: #5a5850; letter-spacing: 0.1em; }
-      .history-content { flex: 1; overflow-y: auto; padding: 1.5rem; display: flex; flex-direction: column; align-items: center; }
-      .history-inner { width: 100%; max-width: 320px; }
-      .history-tools { display: grid; grid-template-columns: 1fr; gap: 0.6rem; margin-bottom: 1.5rem; }
-      .history-tool-btn { background: transparent; border: 1px solid #3a3830; color: #d3cdc4; border-radius: 8px; padding: 0.75rem 0.9rem; font-size: 0.84rem; text-align: left; cursor: pointer; line-height: 1.6; }
-      .history-tool-btn:hover { border-color: #62584a; }
-      .history-tool-label { display: block; color: #ece7df; margin-bottom: 0.15rem; }
-      .history-tool-note { display: block; color: #8a8478; font-size: 0.76rem; }
-      .date-group { margin-bottom: 2rem; }
-      .date-header { font-size: 0.75rem; color: #5a5850; letter-spacing: 0.1em; margin-bottom: 0.75rem; padding-bottom: 0.4rem; border-bottom: 1px solid #2a2820; }
-      .timeline-entry { border-left: 2px solid #3a3830; padding: 0.75rem 0 0.75rem 1rem; margin-bottom: 0.75rem; }
-      .entry-header { display: flex; justify-content: space-between; align-items: baseline; gap: 0.5rem; margin-bottom: 0.3rem; }
-      .entry-mode { font-size: 0.85rem; color: #c8c4bc; }
-      .entry-meta { font-size: 0.75rem; color: #5a5850; white-space: nowrap; }
-      .entry-journal { font-size: 0.8rem; color: #8a8478; line-height: 1.6; margin-top: 0.3rem; }
-      .entry-loop { font-size: 0.75rem; color: #6a6458; line-height: 1.5; margin-top: 0.2rem; font-style: italic; }
-      .checkin-entry { border-left-color: #4a4860; }
-      .entry-checkin { display: flex; gap: 0.5rem; align-items: center; margin-top: 0.2rem; }
-      .checkin-tag { font-size: 0.75rem; color: #9a94c0; background: #2a2840; padding: 0.15rem 0.5rem; border-radius: 2px; }
-      .checkin-body { font-size: 0.8rem; color: #7a7468; }
-      .empty-text { color: #5a5850; font-size: 0.9rem; text-align: center; margin-top: 3rem; }
-      .loading-text { color: #5a5850; font-size: 0.85rem; text-align: center; margin-top: 3rem; }
-    </style>
   `;
     container.querySelector('#back-btn').addEventListener('click', onBack);
     const contentEl = container.querySelector('#history-content');
     const inner = document.createElement('div');
     inner.className = 'history-inner';
+    const rail = document.createElement('div');
+    rail.className = 'history-column';
+    const timeline = document.createElement('div');
+    timeline.className = 'history-timeline';
+    inner.append(rail, timeline);
     // インサイトを上部に表示（非同期）
-    mountInsights(inner);
+    await mountInsights(rail);
     const toolsEl = document.createElement('div');
     toolsEl.className = 'history-tools';
     toolsEl.innerHTML = `
@@ -135,7 +112,7 @@ export async function mountHistory(container, onBack, onEditPreferences) {
       <span class="history-tool-note">session / journal / insight のもとになる記録を消します。</span>
     </button>
   `;
-    inner.appendChild(toolsEl);
+    rail.appendChild(toolsEl);
     toolsEl.querySelector('#edit-preferences-btn').addEventListener('click', onEditPreferences);
     toolsEl.querySelector('#clear-observations-btn').addEventListener('click', async () => {
         if (!window.confirm('見守り記録だけを消しますか？'))
@@ -153,9 +130,9 @@ export async function mountHistory(container, onBack, onEditPreferences) {
     const { entries } = await getUnifiedHistory();
     if (entries.length === 0) {
         const emptyEl = document.createElement('div');
-        emptyEl.className = 'empty-text';
+        emptyEl.className = 'history-empty';
         emptyEl.textContent = 'まだ記録がありません';
-        inner.appendChild(emptyEl);
+        timeline.appendChild(emptyEl);
         contentEl.innerHTML = '';
         contentEl.appendChild(inner);
         return;
@@ -172,7 +149,7 @@ export async function mountHistory(container, onBack, onEditPreferences) {
                 : renderSessionEntry(entry);
             groupEl.innerHTML += html;
         }
-        inner.appendChild(groupEl);
+        timeline.appendChild(groupEl);
     }
     contentEl.innerHTML = '';
     contentEl.appendChild(inner);

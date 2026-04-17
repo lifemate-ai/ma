@@ -4,3 +4,4 @@ node_modules
 dist
 coverage
 ma-web/coverage
+.codex

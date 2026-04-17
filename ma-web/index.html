@@ -3,38 +3,19 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-  <meta name="theme-color" content="#1a1a1a" />
+  <meta name="theme-color" content="#f6efe5" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>komorebi</title>
+  <link rel="icon" href="/icon-192.png" />
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body { height: 100%; background: #1a1a1a; color: #e8e4dc; font-family: 'Hiragino Mincho ProN', 'Yu Mincho', Georgia, serif; }
+    html, body { height: 100%; background: #f6efe5; color: #2b241d; }
     #app { height: 100%; }
   </style>
 </head>
 <body>
   <div id="app"></div>
-  <script>
-    if (
-      location.hostname === 'localhost' &&
-      location.port === '5173' &&
-      'serviceWorker' in navigator
-    ) {
-      window.addEventListener('load', async () => {
-        try {
-          const registrations = await navigator.serviceWorker.getRegistrations()
-          await Promise.all(registrations.map(registration => registration.unregister()))
-          if ('caches' in window) {
-            const cacheNames = await caches.keys()
-            await Promise.all(cacheNames.map(name => caches.delete(name)))
-          }
-        } catch (_) {
-          // Keep dev boot resilient even if cleanup fails.
-        }
-      })
-    }
-  </script>
   <script type="module" src="/src/main.ts"></script>
 </body>
 </html>

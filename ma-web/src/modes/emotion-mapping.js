@@ -9,37 +9,31 @@ export function mountEmotionMapping(container, onDone) {
     let selectedEmotion = '';
     container.innerHTML = `
     <div class="emotion-mapping-screen">
-      <div class="em-title">感情をたどる</div>
-      <div class="em-prompt" id="em-prompt">今、どんな感情がありますか？</div>
-      <div class="em-emotions" id="em-emotions">
-        ${EMOTIONS.map(e => `<button class="emotion-btn" data-emotion="${e}">${e}</button>`).join('')}
+      <div class="simple-practice-card">
+        <div class="simple-practice-eyebrow">emotion labeling</div>
+        <div class="em-title">感情をたどる</div>
+        <div class="em-prompt" id="em-prompt">今、どんな感情がありますか？</div>
+        <div class="em-emotions" id="em-emotions">
+          ${EMOTIONS.map(e => `<button class="emotion-btn" data-emotion="${e}">${e}</button>`).join('')}
+        </div>
+        <div class="em-body-section hidden" id="em-body-section">
+          <div id="body-location-prompt" class="em-prompt">その感情は、体のどこにありますか？</div>
+          <input type="text" id="body-location-input" class="em-input" placeholder="例: 胸、お腹、肩..." />
+          <div class="simple-practice-actions">
+            <button class="mode-btn" id="body-send-btn">送る</button>
+          </div>
+        </div>
+        <div class="em-reflection-section hidden" id="em-reflection-section">
+          <div id="em-reflection" class="em-reflection"></div>
+          <div class="simple-practice-actions">
+            <button class="mode-btn" id="em-done-btn">おわる</button>
+          </div>
+        </div>
+        <div class="simple-practice-actions">
+          <button class="stop-btn" id="em-cancel-btn">やめる</button>
+        </div>
       </div>
-      <div class="em-body-section hidden" id="em-body-section">
-        <div id="body-location-prompt" class="em-prompt">その感情は、体のどこにありますか？</div>
-        <input type="text" id="body-location-input" class="em-input" placeholder="例: 胸、お腹、肩..." />
-        <button class="mode-btn" id="body-send-btn">送る</button>
-      </div>
-      <div class="em-reflection-section hidden" id="em-reflection-section">
-        <div id="em-reflection" class="em-reflection"></div>
-        <button class="mode-btn" id="em-done-btn">おわる</button>
-      </div>
-      <button class="stop-btn" id="em-cancel-btn">やめる</button>
     </div>
-    <style>
-      .emotion-mapping-screen { height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem; gap: 1.5rem; }
-      .em-title { font-size: 1.3rem; color: #e8e4dc; }
-      .em-prompt { font-size: 1rem; color: #c8c4bc; text-align: center; }
-      .em-emotions { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center; max-width: 320px; }
-      .emotion-btn { background: transparent; border: 1px solid #3a3830; color: #e8e4dc; padding: 0.5rem 1rem; cursor: pointer; border-radius: 4px; font-size: 0.9rem; }
-      .emotion-btn:hover { border-color: #6a6458; background: #222; }
-      .em-input { background: #222; border: 1px solid #3a3830; color: #e8e4dc; padding: 0.75rem; font-size: 1rem; border-radius: 4px; outline: none; width: 100%; max-width: 280px; }
-      .em-input:focus { border-color: #6a6458; }
-      .em-reflection { font-size: 1rem; color: #c8c4bc; text-align: center; max-width: 300px; line-height: 1.8; }
-      .em-body-section, .em-reflection-section { display: flex; flex-direction: column; align-items: center; gap: 1rem; }
-      .hidden { display: none !important; }
-      .stop-btn { background: transparent; border: 1px solid #4a4840; color: #8a8478; font-size: 0.85rem; cursor: pointer; padding: 0.5rem 1.5rem; border-radius: 4px; }
-      .mode-btn { background: transparent; border: 1px solid #4a4840; color: #e8e4dc; padding: 0.75rem 2rem; cursor: pointer; border-radius: 4px; font-size: 0.95rem; }
-    </style>
   `;
     const emotionsArea = container.querySelector('#em-emotions');
     const bodySection = container.querySelector('#em-body-section');

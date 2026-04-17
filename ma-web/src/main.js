@@ -1,9 +1,11 @@
+import './ui.css';
 import { mountSession } from './session';
 import { mountJournal } from './journal';
 import { mountHistory } from './history';
 import { ensureAuth } from './auth';
 import { getUserGoals, getUserPreferences } from './api';
 import { mountOnboarding } from './onboarding';
+import { cleanupDevServiceWorkers } from './dev-sw-cleanup';
 const app = document.getElementById('app');
 let cachedPreferences = null;
 let cachedGoals = null;
@@ -36,7 +38,7 @@ function render(view, opts) {
     }
 }
 // アプリ起動: 認証確認してからrender
-ensureAuth().then(async (ok) => {
+cleanupDevServiceWorkers().finally(() => ensureAuth().then(async (ok) => {
     if (!ok)
         return;
     cachedPreferences = await getUserPreferences().catch(() => null);
@@ -47,4 +49,4 @@ ensureAuth().then(async (ok) => {
     }
     render('session');
     // ok=falseはリダイレクト中なので何もしない
-});
+}));

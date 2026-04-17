@@ -82,74 +82,60 @@ export function mountOnboarding(container: HTMLElement, options: OnboardingOptio
   container.innerHTML = `
     <div class="onboarding-screen">
       <div class="onboarding-card">
-        <div class="onboarding-title">${title}</div>
-        <div class="onboarding-subtitle">無理なく戻りやすい形を、先に軽く決めます。</div>
-
-        <div class="onboarding-section">
-          <div class="section-label">使いたい場面</div>
-          <div class="chip-grid" id="context-options"></div>
-        </div>
-
-        <div class="onboarding-section">
-          <div class="section-label">いちばん近い目的</div>
-          <div class="chip-grid" id="goal-options"></div>
-        </div>
-
-        <div class="onboarding-section">
-          <div class="section-label">ふだん取りやすい時間</div>
-          <div class="chip-grid" id="duration-options"></div>
-        </div>
-
-        <div class="onboarding-section">
-          <div class="section-label">姿勢の好み</div>
-          <div class="chip-grid" id="posture-options"></div>
-        </div>
-
-        <div class="onboarding-section split">
-          <div>
-            <div class="section-label">音声の頻度</div>
-            <div class="chip-grid" id="voice-options"></div>
+        <div class="onboarding-layout">
+          <div class="onboarding-aside">
+            <div class="session-kicker">personal calm profile</div>
+            <div class="onboarding-title">${title}</div>
+            <div class="onboarding-subtitle">無理なく戻りやすい形を、先に軽く決めます。ここで決めたことは、あとから何度でも見直せます。</div>
           </div>
-          <div>
-            <div class="section-label">目の開け方</div>
-            <div class="chip-grid" id="eyes-options"></div>
+
+          <div class="onboarding-form">
+            <div class="onboarding-section">
+              <div class="section-label">使いたい場面</div>
+              <div class="chip-grid" id="context-options"></div>
+            </div>
+
+            <div class="onboarding-section">
+              <div class="section-label">いちばん近い目的</div>
+              <div class="chip-grid" id="goal-options"></div>
+            </div>
+
+            <div class="onboarding-section">
+              <div class="section-label">ふだん取りやすい時間</div>
+              <div class="chip-grid" id="duration-options"></div>
+            </div>
+
+            <div class="onboarding-section">
+              <div class="section-label">姿勢の好み</div>
+              <div class="chip-grid" id="posture-options"></div>
+            </div>
+
+            <div class="onboarding-section split">
+              <div>
+                <div class="section-label">音声の頻度</div>
+                <div class="chip-grid" id="voice-options"></div>
+              </div>
+              <div>
+                <div class="section-label">目の開け方</div>
+                <div class="chip-grid" id="eyes-options"></div>
+              </div>
+            </div>
+
+            <label class="watch-option">
+              <input type="checkbox" id="watch-opt-in" ${preferences.watch_opt_in ? 'checked' : ''} />
+              <span>見守り camera を使う</span>
+            </label>
+            <div class="watch-note">初期値は OFF です。session 中だけ使い、見える事実だけを扱います。内面は断定しません。</div>
+            <div class="safety-note">強い不安や過覚醒がある日は、深掘りより grounding を優先します。つらくなったらいつでも止めて大丈夫です。</div>
+
+            <div class="onboarding-actions">
+              <button class="secondary-btn" id="onboarding-skip-btn">${options.editing ? '戻る' : 'あとで'}</button>
+              <button class="primary-btn" id="onboarding-save-btn">保存する</button>
+            </div>
           </div>
-        </div>
-
-        <label class="watch-option">
-          <input type="checkbox" id="watch-opt-in" ${preferences.watch_opt_in ? 'checked' : ''} />
-          <span>見守り camera を使う</span>
-        </label>
-        <div class="watch-note">初期値は OFF です。session 中だけ使い、見える事実だけを扱います。内面は断定しません。</div>
-        <div class="safety-note">強い不安や過覚醒がある日は、深掘りより grounding を優先します。つらくなったらいつでも止めて大丈夫です。</div>
-
-        <div class="onboarding-actions">
-          <button class="secondary-btn" id="onboarding-skip-btn">${options.editing ? '戻る' : 'あとで'}</button>
-          <button class="primary-btn" id="onboarding-save-btn">保存する</button>
         </div>
       </div>
     </div>
-    <style>
-      .onboarding-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 1.5rem; }
-      .onboarding-card { width: 100%; max-width: 720px; background: rgba(22, 21, 19, 0.86); border: 1px solid #302d27; border-radius: 12px; padding: 1.4rem; display: flex; flex-direction: column; gap: 1rem; }
-      .onboarding-title { font-size: 1.2rem; color: #ece7df; }
-      .onboarding-subtitle { font-size: 0.9rem; color: #9a9488; line-height: 1.7; }
-      .onboarding-section { display: flex; flex-direction: column; gap: 0.55rem; }
-      .onboarding-section.split { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-      .section-label { font-size: 0.78rem; color: #8a8478; letter-spacing: 0.08em; text-transform: uppercase; }
-      .chip-grid { display: flex; flex-wrap: wrap; gap: 0.55rem; }
-      .chip-btn { background: transparent; border: 1px solid #4a4840; color: #d8d2c8; padding: 0.55rem 0.8rem; border-radius: 999px; cursor: pointer; font-size: 0.85rem; }
-      .chip-btn.selected { border-color: #a19278; color: #fff7ea; background: rgba(93, 78, 40, 0.18); }
-      .watch-option { display: flex; align-items: center; gap: 0.6rem; color: #d8d2c8; font-size: 0.88rem; }
-      .watch-note, .safety-note { font-size: 0.8rem; color: #8a8478; line-height: 1.7; }
-      .onboarding-actions { display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 0.5rem; }
-      .primary-btn, .secondary-btn { background: transparent; border: 1px solid #4a4840; color: #e8e4dc; padding: 0.72rem 1rem; border-radius: 6px; cursor: pointer; font-size: 0.9rem; }
-      .primary-btn { border-color: #7d6f57; }
-      @media (max-width: 640px) {
-        .onboarding-section.split { grid-template-columns: 1fr; }
-        .onboarding-actions { flex-direction: column-reverse; }
-      }
-    </style>
   `
 
   const contextOptionsEl = container.querySelector('#context-options') as HTMLElement

@@ -1,9 +1,11 @@
+import './ui.css'
 import { mountSession } from './session'
 import { mountJournal } from './journal'
 import { mountHistory } from './history'
 import { ensureAuth } from './auth'
 import { getUserGoals, getUserPreferences, UserGoals, UserPreferences } from './api'
 import { mountOnboarding } from './onboarding'
+import { cleanupDevServiceWorkers } from './dev-sw-cleanup'
 
 type View = 'session' | 'journal' | 'history' | 'onboarding'
 
@@ -38,7 +40,7 @@ function render(view: View, opts?: { sessionId?: string; editing?: boolean }) {
 }
 
 // アプリ起動: 認証確認してからrender
-ensureAuth().then(async ok => {
+cleanupDevServiceWorkers().finally(() => ensureAuth().then(async ok => {
   if (!ok) return
   cachedPreferences = await getUserPreferences().catch(() => null)
   cachedGoals = await getUserGoals().catch(() => null)
@@ -48,4 +50,4 @@ ensureAuth().then(async ok => {
   }
   render('session')
   // ok=falseはリダイレクト中なので何もしない
-})
+}))

@@ -51,26 +51,22 @@ export function mountCompassion(container: HTMLElement, onDone: (sessionId?: str
 
   container.innerHTML = `
     <div class="compassion-screen">
-      <div class="compassion-title">慈悲の瞑想</div>
-      <div class="compassion-subtitle">思いやりを届ける</div>
-      <button class="mode-btn" id="compassion-start-btn">始める</button>
-      <div class="compassion-running hidden" id="compassion-running">
-        <div id="compassion-phase-label" class="compassion-phase-label"></div>
-        <div id="compassion-phrase-text" class="compassion-phrase-text"></div>
-        <button class="stop-btn" id="compassion-cancel-btn">やめる</button>
+      <div class="simple-practice-card">
+        <div class="simple-practice-eyebrow">loving-kindness</div>
+        <div class="compassion-title">慈悲の瞑想</div>
+        <div class="simple-practice-subtitle">思いやりを届ける</div>
+        <div class="simple-practice-actions">
+          <button class="mode-btn" id="compassion-start-btn">始める</button>
+        </div>
+        <div class="compassion-running hidden" id="compassion-running">
+          <div id="compassion-phase-label" class="compassion-phase-label"></div>
+          <div id="compassion-phrase-text" class="compassion-phrase-text"></div>
+          <div class="simple-practice-actions">
+            <button class="stop-btn" id="compassion-cancel-btn">やめる</button>
+          </div>
+        </div>
       </div>
     </div>
-    <style>
-      .compassion-screen { height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem; gap: 1.5rem; }
-      .compassion-title { font-size: 1.5rem; color: #e8e4dc; }
-      .compassion-subtitle { font-size: 0.85rem; color: #7a7468; }
-      .compassion-running { display: flex; flex-direction: column; align-items: center; gap: 1.5rem; }
-      .compassion-phase-label { font-size: 1.2rem; color: #c8c4bc; }
-      .compassion-phrase-text { font-size: 1rem; color: #9a9488; text-align: center; max-width: 300px; line-height: 1.8; min-height: 2em; }
-      .hidden { display: none !important; }
-      .mode-btn { background: transparent; border: 1px solid #4a4840; color: #e8e4dc; padding: 0.75rem 2rem; cursor: pointer; border-radius: 4px; font-size: 0.95rem; }
-      .stop-btn { background: transparent; border: 1px solid #4a4840; color: #8a8478; font-size: 0.85rem; cursor: pointer; padding: 0.5rem 1.5rem; border-radius: 4px; }
-    </style>
   `
 
   const startBtn = container.querySelector('#compassion-start-btn') as HTMLButtonElement
@@ -87,7 +83,7 @@ export function mountCompassion(container: HTMLElement, onDone: (sessionId?: str
 
   startBtn.addEventListener('click', () => {
     startBtn.classList.add('hidden')
-    container.querySelector('.compassion-subtitle')?.classList.add('hidden')
+    container.querySelector('.simple-practice-subtitle')?.classList.add('hidden')
     runningArea.classList.remove('hidden')
     runPhases()
   })
