@@ -7,11 +7,10 @@ import {
   getRecommendations,
   greet,
   logRecommendationAcceptance,
+  saveJournal,
   saveObservation,
   saveSession,
   saveSessionEvent,
-  saveSessionPostcheck,
-  saveSessionPrecheck,
   SessionMode,
   UserGoals,
   UserPreferences,
@@ -78,6 +77,8 @@ export function mountSession(
   let watchBusy = false
   let watchStartTimer: number | null = null
   let watchInterval: number | null = null
+  let selectedDurationMinutes = userPreferences.preferred_durations[0] ?? 2
+  const durationOptions = [2, 3, 5, 10, 15] as const
 
   container.innerHTML = `
     <div class="session-screen">
@@ -93,10 +94,10 @@ export function mountSession(
         </div>
 
         <div class="session-hero">
-          <div class="session-kicker">re-entry friendly</div>
+          <div class="session-kicker">re-entry, softly</div>
           <div class="session-title">いま戻りやすいところから。</div>
           <div class="greeting-area" id="greeting-text"></div>
-          <div class="session-note">2分でも大丈夫です。途中で止めても、切り上げても、失敗にはなりません。</div>
+          <div class="session-note">途中で止めても、切り上げても、失敗にはなりません。短い入口でも十分です。</div>
         </div>
 
         <div class="watch-panel" id="watch-panel">
@@ -119,7 +120,18 @@ export function mountSession(
               <div class="section-label">practice library</div>
               <div class="mode-section-title">今の自分に合う入り口</div>
             </div>
-            <div class="mode-note">短い入口を前に置いて、必要なときだけ深く入れるようにしています。</div>
+            <div class="mode-note">長さを先に選ぶと、そのあとの問いがそっと短くなります。</div>
+          </div>
+
+          <div class="duration-picker">
+            <div class="section-label">今日はこの長さ</div>
+            <div class="duration-choices" id="duration-choices">
+              ${durationOptions.map(value => `
+                <button class="duration-chip ${value === selectedDurationMinutes ? 'selected' : ''}" data-duration="${value}">
+                  ${value}分
+                </button>
+              `).join('')}
+            </div>
           </div>
 
           <div class="mode-select" id="mode-select">
@@ -176,29 +188,12 @@ export function mountSession(
       </div>
       <div class="sheet-area hidden" id="precheck-area">
         <div class="sheet-card">
-          <div class="sheet-title">今の感じを軽く見ます</div>
-          <div class="sheet-subtitle">長く答えなくて大丈夫です。いまに合う強さへ整えるためだけに使います。</div>
+          <div class="sheet-title" id="precheck-title">いまの感じ</div>
+          <div class="sheet-subtitle">短くても、空のままでも大丈夫です。書くほどのことがあれば、数語で。</div>
           <label class="sheet-field">
-            <span>場面</span>
-            <select id="precheck-context">
-              <option value="">選ばない</option>
-              <option value="morning">朝</option>
-              <option value="work_break">仕事の合間</option>
-              <option value="bedtime">寝る前</option>
-              <option value="emotional_overwhelm">感情が荒れている</option>
-              <option value="general_reset">なんとなく整えたい</option>
-            </select>
+            <span>いま</span>
+            <textarea id="precheck-note" rows="4" placeholder="疲れてる / ざわついてる / なんとなく、など。"></textarea>
           </label>
-          <div class="sheet-grid">
-            <label class="sheet-field"><span>時間</span><select id="precheck-minutes"><option value="2">2分</option><option value="3">3分</option><option value="5">5分</option><option value="10">10分</option><option value="15">15分</option></select></label>
-            <label class="sheet-field"><span>stress</span><select id="precheck-stress"><option value="">-</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></label>
-            <label class="sheet-field"><span>agitation</span><select id="precheck-agitation"><option value="">-</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></label>
-            <label class="sheet-field"><span>energy</span><select id="precheck-energy"><option value="">-</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></label>
-            <label class="sheet-field"><span>sleepiness</span><select id="precheck-sleepiness"><option value="">-</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></label>
-            <label class="sheet-field"><span>body tension</span><select id="precheck-body-tension"><option value="">-</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></label>
-            <label class="sheet-field"><span>overwhelm</span><select id="precheck-overwhelm"><option value="">-</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></label>
-            <label class="sheet-field"><span>self-criticism</span><select id="precheck-self-criticism"><option value="">-</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></label>
-          </div>
           <div class="sheet-actions">
             <button class="secondary-btn" id="precheck-cancel-btn">戻る</button>
             <button class="extend-btn" id="precheck-start-btn">始める</button>
@@ -212,17 +207,12 @@ export function mountSession(
       </div>
       <div class="sheet-area hidden" id="postcheck-area">
         <div class="sheet-card">
-          <div class="sheet-title">少し戻れた感じはありましたか</div>
-          <div class="sheet-subtitle">一言の感想だけでも十分です。次をやさしく合わせるために残します。</div>
-          <div class="sheet-grid">
-            <label class="sheet-field"><span>calmer</span><select id="postcheck-calmer"><option value="">-</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></label>
-            <label class="sheet-field"><span>more present</span><select id="postcheck-presence"><option value="">-</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></label>
-            <label class="sheet-field"><span>self-kindness</span><select id="postcheck-kindness"><option value="">-</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></label>
-            <label class="sheet-field"><span>burden</span><select id="postcheck-burden"><option value="">-</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></label>
-            <label class="sheet-field"><span>repeat intent</span><select id="postcheck-repeat"><option value="">-</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></label>
-            <label class="sheet-field"><span>too activated</span><select id="postcheck-activated"><option value="0">no</option><option value="1">yes</option></select></label>
-            <label class="sheet-field"><span>too sleepy</span><select id="postcheck-sleepy"><option value="0">no</option><option value="1">yes</option></select></label>
-          </div>
+          <div class="sheet-title">いまの感想</div>
+          <div class="sheet-subtitle">空のままでも大丈夫です。一言でも、続けるほど、次をやさしく合わせやすくなります。</div>
+          <label class="sheet-field">
+            <span>いま</span>
+            <textarea id="postcheck-note" rows="4" placeholder="少し落ち着いた / まだざわつく / 眠い、くらいで十分です。"></textarea>
+          </label>
           <div class="sheet-actions">
             <button class="secondary-btn" id="postcheck-skip-btn">とばす</button>
             <button class="extend-btn" id="postcheck-save-btn">続ける</button>
@@ -243,12 +233,14 @@ export function mountSession(
   const modeSelectEl = container.querySelector('#mode-select') as HTMLElement
   const recommendationPanelEl = container.querySelector('#recommendation-panel') as HTMLElement
   const recommendationListEl = container.querySelector('#recommendation-list') as HTMLElement
+  const durationChoicesEl = container.querySelector('#duration-choices') as HTMLElement
   const homeHistoryEl = container.querySelector('#home-history') as HTMLElement
   const watchStatusEl = container.querySelector('#watch-status') as HTMLElement
   const watchPreviewEl = container.querySelector('#watch-preview') as HTMLVideoElement
   const watchBtnEl = container.querySelector('#watch-btn') as HTMLButtonElement
   const runningAreaEl = container.querySelector('#running-area') as HTMLElement
   const precheckAreaEl = container.querySelector('#precheck-area') as HTMLElement
+  const precheckTitleEl = container.querySelector('#precheck-title') as HTMLElement
   const extendingAreaEl = container.querySelector('#extending-area') as HTMLElement
   const postcheckAreaEl = container.querySelector('#postcheck-area') as HTMLElement
   const closingAreaEl = container.querySelector('#closing-area') as HTMLElement
@@ -257,31 +249,24 @@ export function mountSession(
   const hintEl = container.querySelector('#mode-hint') as HTMLElement
   const breathCircleWrapEl = container.querySelector('#breath-circle-wrap') as HTMLElement
   const breathCueEl = container.querySelector('#breath-cue') as HTMLElement
-  const precheckContextEl = container.querySelector('#precheck-context') as HTMLSelectElement
-  const precheckMinutesEl = container.querySelector('#precheck-minutes') as HTMLSelectElement
-  const precheckStressEl = container.querySelector('#precheck-stress') as HTMLSelectElement
-  const precheckAgitationEl = container.querySelector('#precheck-agitation') as HTMLSelectElement
-  const precheckEnergyEl = container.querySelector('#precheck-energy') as HTMLSelectElement
-  const precheckSleepinessEl = container.querySelector('#precheck-sleepiness') as HTMLSelectElement
-  const precheckBodyTensionEl = container.querySelector('#precheck-body-tension') as HTMLSelectElement
-  const precheckOverwhelmEl = container.querySelector('#precheck-overwhelm') as HTMLSelectElement
-  const precheckSelfCriticismEl = container.querySelector('#precheck-self-criticism') as HTMLSelectElement
-  const postcheckCalmerEl = container.querySelector('#postcheck-calmer') as HTMLSelectElement
-  const postcheckPresenceEl = container.querySelector('#postcheck-presence') as HTMLSelectElement
-  const postcheckKindnessEl = container.querySelector('#postcheck-kindness') as HTMLSelectElement
-  const postcheckBurdenEl = container.querySelector('#postcheck-burden') as HTMLSelectElement
-  const postcheckRepeatEl = container.querySelector('#postcheck-repeat') as HTMLSelectElement
-  const postcheckActivatedEl = container.querySelector('#postcheck-activated') as HTMLSelectElement
-  const postcheckSleepyEl = container.querySelector('#postcheck-sleepy') as HTMLSelectElement
+  const precheckNoteEl = container.querySelector('#precheck-note') as HTMLTextAreaElement
+  const postcheckNoteEl = container.querySelector('#postcheck-note') as HTMLTextAreaElement
   const watchInactiveText = '自分の顔を見ながら座れます。camera は session 中だけ使い、見える事実だけを受け取ります。内面は断定しません。'
   const watchEnabledText = 'preview を開いています。自分の顔を見ながら座れます。見守りは session 中だけで、見える事実だけを静かに受け取ります。'
   let recommendationDecisionRecorded = false
 
-  precheckContextEl.value = userPreferences.use_contexts[0] ?? ''
-  precheckMinutesEl.value = String(userPreferences.preferred_durations[0] ?? 2)
   watchStatusEl.textContent = userPreferences.watch_opt_in
     ? `${watchInactiveText} この端末では使ってよい設定ですが、毎回 OFF のままでも大丈夫です。`
     : watchInactiveText
+
+  durationChoicesEl.querySelectorAll('.duration-chip').forEach(btn => {
+    btn.addEventListener('click', () => {
+      selectedDurationMinutes = Number((btn as HTMLElement).dataset.duration ?? selectedDurationMinutes)
+      durationChoicesEl.querySelectorAll('.duration-chip').forEach(chip => {
+        chip.classList.toggle('selected', chip === btn)
+      })
+    })
+  })
 
   container.querySelector('#history-btn')!.addEventListener('click', () => {
     greetCancelled = true
@@ -387,15 +372,11 @@ export function mountSession(
       greetCancelled = true
       stopCurrentAudio()
       const mode = (btn as HTMLElement).dataset.mode as SessionMode
-      startSession(mode)
+      startSession(mode, { durationMinutes: selectedDurationMinutes })
     })
   })
 
   async function startSession(mode: SessionMode, options: StartOptions = {}) {
-    if (isTimedSessionMode(mode) && !options.prechecked) {
-      openPrecheck(mode, options)
-      return
-    }
     if (isInteractiveLegacyMode(mode)) {
       disableWatch()
       container.innerHTML = ''
@@ -405,6 +386,10 @@ export function mountSession(
       return
     }
     if (!isTimedSessionMode(mode)) return
+    if (!options.prechecked) {
+      openPrecheck(mode, options)
+      return
+    }
 
     const plan = buildSessionPlan(mode, options.durationMinutes)
     const sessionId = options.sessionId ?? createSessionId()
@@ -423,6 +408,7 @@ export function mountSession(
 
     recommendationPanelEl.classList.add('hidden')
     modeSelectEl.classList.add('hidden')
+    durationChoicesEl.closest('.duration-picker')?.classList.add('hidden')
     sessionIntroEl.classList.add('hidden')
     sessionMainEl.classList.add('hidden')
     homeHistoryEl.classList.add('hidden')
@@ -471,10 +457,6 @@ export function mountSession(
     }, 1000)
   }
 
-  function readOptionalNumber(select: HTMLSelectElement): number | undefined {
-    return select.value === '' ? undefined : Number(select.value)
-  }
-
   function refreshButton(selector: string): HTMLButtonElement {
     const current = container.querySelector(selector) as HTMLButtonElement
     const next = current.cloneNode(true) as HTMLButtonElement
@@ -483,45 +465,33 @@ export function mountSession(
   }
 
   function resetPostcheckForm() {
-    postcheckCalmerEl.value = ''
-    postcheckPresenceEl.value = ''
-    postcheckKindnessEl.value = ''
-    postcheckBurdenEl.value = ''
-    postcheckRepeatEl.value = ''
-    postcheckActivatedEl.value = '0'
-    postcheckSleepyEl.value = '0'
+    postcheckNoteEl.value = ''
   }
 
   function openPrecheck(mode: SessionMode, options: StartOptions) {
-    precheckContextEl.value = precheckContextEl.value || userPreferences.use_contexts[0] || ''
-    precheckMinutesEl.value = String(options.durationMinutes ?? userPreferences.preferred_durations[0] ?? 2)
+    const availableMinutes = options.durationMinutes ?? selectedDurationMinutes
+    precheckTitleEl.textContent = `${availableMinutes}分のまえに、いまの感じ`
+    precheckNoteEl.value = ''
     precheckAreaEl.classList.remove('hidden')
+    window.setTimeout(() => precheckNoteEl.focus(), 0)
 
-    const cancelBtn = container.querySelector('#precheck-cancel-btn') as HTMLButtonElement
-    const startBtn = container.querySelector('#precheck-start-btn') as HTMLButtonElement
+    const cancelBtn = refreshButton('#precheck-cancel-btn')
+    const startBtn = refreshButton('#precheck-start-btn')
 
     const closeSheet = () => {
       precheckAreaEl.classList.add('hidden')
-      cancelBtn.removeEventListener('click', handleCancel)
-      startBtn.removeEventListener('click', handleStart)
     }
 
-    const handleCancel = () => closeSheet()
-    const handleStart = async () => {
+    cancelBtn.addEventListener('click', () => closeSheet(), { once: true })
+    startBtn.addEventListener('click', async () => {
       const sessionId = createSessionId()
-      const availableMinutes = Number(precheckMinutesEl.value || options.durationMinutes || userPreferences.preferred_durations[0] || 2)
-      await saveSessionPrecheck({
-        session_id: sessionId,
-        stress: readOptionalNumber(precheckStressEl),
-        agitation: readOptionalNumber(precheckAgitationEl),
-        energy: readOptionalNumber(precheckEnergyEl),
-        sleepiness: readOptionalNumber(precheckSleepinessEl),
-        body_tension: readOptionalNumber(precheckBodyTensionEl),
-        overwhelm: readOptionalNumber(precheckOverwhelmEl),
-        self_criticism: readOptionalNumber(precheckSelfCriticismEl),
-        available_minutes: availableMinutes,
-        context_tag: precheckContextEl.value || undefined,
-      }).catch(() => {})
+      const note = precheckNoteEl.value.trim()
+      if (note) {
+        await saveJournal({
+          session_id: sessionId,
+          user_text: `[before] ${note}`,
+        }).catch(() => {})
+      }
       closeSheet()
       await startSession(mode, {
         ...options,
@@ -529,10 +499,7 @@ export function mountSession(
         sessionId,
         durationMinutes: availableMinutes,
       })
-    }
-
-    cancelBtn.addEventListener('click', handleCancel, { once: true })
-    startBtn.addEventListener('click', () => { void handleStart() }, { once: true })
+    }, { once: true })
   }
 
   function configureRunningArea(plan: SessionPlan) {
@@ -841,16 +808,13 @@ export function mountSession(
     }
 
     saveBtn.addEventListener('click', async () => {
-      await saveSessionPostcheck({
-        session_id: sessionId,
-        calm_delta_self_report: readOptionalNumber(postcheckCalmerEl),
-        presence_delta: readOptionalNumber(postcheckPresenceEl),
-        self_kindness_delta: readOptionalNumber(postcheckKindnessEl),
-        burden: readOptionalNumber(postcheckBurdenEl),
-        too_activated: postcheckActivatedEl.value === '1',
-        too_sleepy: postcheckSleepyEl.value === '1',
-        repeat_intent: readOptionalNumber(postcheckRepeatEl),
-      }).catch(() => {})
+      const note = postcheckNoteEl.value.trim()
+      if (note) {
+        await saveJournal({
+          session_id: sessionId,
+          user_text: `[after] ${note}`,
+        }).catch(() => {})
+      }
       await finish()
     }, { once: true })
 

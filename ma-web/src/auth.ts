@@ -15,6 +15,10 @@ export function isAuthEnabled(): boolean {
   return AUTH_MODE !== 'disabled'
 }
 
+export function isAuthConfigured(): boolean {
+  return !isAuthEnabled() || isCognitoConfigured()
+}
+
 function readWithMigration(storage: Storage, key: string, legacyKey: string): string | null {
   const current = storage.getItem(key)
   if (current) return current

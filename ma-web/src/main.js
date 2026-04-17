@@ -2,13 +2,24 @@ import './ui.css';
 import { mountSession } from './session';
 import { mountJournal } from './journal';
 import { mountHistory } from './history';
-import { ensureAuth } from './auth';
+import { ensureAuth, isAuthConfigured, isAuthEnabled } from './auth';
 import { getUserGoals, getUserPreferences } from './api';
 import { mountOnboarding } from './onboarding';
 import { cleanupDevServiceWorkers } from './dev-sw-cleanup';
 const app = document.getElementById('app');
 let cachedPreferences = null;
 let cachedGoals = null;
+function renderBootIssue(title, detail) {
+    app.innerHTML = `
+    <div class="onboarding-screen">
+      <div class="simple-practice-card">
+        <div class="simple-practice-eyebrow">startup issue</div>
+        <div class="simple-practice-title">${title}</div>
+        <div class="simple-practice-subtitle">${detail}</div>
+      </div>
+    </div>
+  `;
+}
 function render(view, opts) {
     app.innerHTML = '';
     if (view === 'onboarding') {
@@ -39,8 +50,12 @@ function render(view, opts) {
 }
 // アプリ起動: 認証確認してからrender
 cleanupDevServiceWorkers().finally(() => ensureAuth().then(async (ok) => {
-    if (!ok)
+    if (!ok) {
+        if (isAuthEnabled() && !isAuthConfigured()) {
+            renderBootIssue('認証設定が見つかりません', 'local 開発では repo root の .env から VITE_AUTH_MODE=disabled を読む想定です。dev server を再起動してもう一度開いてください。');
+        }
         return;
+    }
     cachedPreferences = await getUserPreferences().catch(() => null);
     cachedGoals = await getUserGoals().catch(() => null);
     if (!cachedPreferences?.onboarding_completed) {

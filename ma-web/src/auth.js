@@ -12,6 +12,9 @@ function isCognitoConfigured() {
 export function isAuthEnabled() {
     return AUTH_MODE !== 'disabled';
 }
+export function isAuthConfigured() {
+    return !isAuthEnabled() || isCognitoConfigured();
+}
 function readWithMigration(storage, key, legacyKey) {
     const current = storage.getItem(key);
     if (current)
